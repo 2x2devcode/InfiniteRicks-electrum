@@ -1,6 +1,6 @@
 [app]
 title = InfiniteRicks Wallet
-project_dir = .
+project_dir = ..
 input_file = main.py
 exec_directory = deployment
 icon = resources/icons/app_icon.png

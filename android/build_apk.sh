@@ -100,9 +100,39 @@ sdk_is_complete() {
         && [[ -n "$(find "$sdk_dir/platforms" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)" ]]
 }
 
+resolve_ndk_root() {
+    local path="$1" nested
+    [[ -n "$path" ]] || return 1
+    if [[ -x "$path/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readobj" ]]; then
+        echo "$path"
+        return 0
+    fi
+    for nested in "$path"/android-ndk-*; do
+        [[ -d "$nested" ]] || continue
+        if [[ -x "$nested/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readobj" ]]; then
+            echo "$nested"
+            return 0
+        fi
+    done
+    return 1
+}
+
+find_valid_ndk() {
+    local cache candidate resolved
+    for cache in "${CACHE_DIRS[@]}"; do
+        while IFS= read -r candidate; do
+            if resolved="$(resolve_ndk_root "$candidate")"; then
+                echo "$resolved"
+                return 0
+            fi
+        done < <(find "$cache" -type d -name 'android-ndk*' 2>/dev/null)
+    done
+    return 1
+}
+
 ndk_cache_ready() {
     local cache="$1"
-    find "$cache" -maxdepth 3 -type d -name 'android-ndk*' 2>/dev/null | grep -q .
+    resolve_ndk_root "$cache/android-ndk" &>/dev/null
 }
 
 check_python() {
@@ -270,13 +300,16 @@ setup_ndk_sdk() {
 find_ndk_sdk() {
     NDK_PATH="${NDK_PATH:-}"
     SDK_PATH="${SDK_PATH:-}"
-    local cache
-    if [[ -z "$NDK_PATH" ]]; then
-        for cache in "${CACHE_DIRS[@]}"; do
-            NDK_PATH="$(find "$cache" -maxdepth 3 -type d -name 'android-ndk*' 2>/dev/null | head -1)"
-            [[ -n "$NDK_PATH" ]] && break
-        done
+    local cache resolved
+
+    if [[ -n "$NDK_PATH" ]]; then
+        resolved="$(resolve_ndk_root "$NDK_PATH" || true)"
+        [[ -n "$resolved" ]] || die "Invalid NDK_PATH (missing llvm-readobj): $NDK_PATH"
+        NDK_PATH="$resolved"
+    else
+        NDK_PATH="$(find_valid_ndk || true)"
     fi
+
     if [[ -z "$SDK_PATH" ]]; then
         for cache in "${CACHE_DIRS[@]}"; do
             SDK_PATH="$(find "$cache" -maxdepth 2 -type d -name 'android-sdk*' 2>/dev/null | head -1)"
@@ -305,6 +338,7 @@ run_android_deploy() {
         --config-file "$SPEC_FILE" \
         --force \
         --verbose \
+        --extra-ignore-dirs ".venv-android,.venv,android/wheels,tests,.git" \
         "${extra_args[@]}" \
         "$@"
 }
