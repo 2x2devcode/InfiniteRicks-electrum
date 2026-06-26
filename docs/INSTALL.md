@@ -121,7 +121,7 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
 | `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
 | `Java Runtime not found` | Instale JDK 17: `apt install openjdk-17-jdk` (o script tenta instalar sozinho) |
-| `cpython` pip error | `cpython` is a p4a recipe, not pip — use `android_packages = buildozer, cython` only |
+| `sdkmanager path ... does not exist` | Rode `git pull` — o script cria symlink `tools/bin/sdkmanager` para o SDK moderno |
 | Python 3.10 no build APK | Use Python 3.11: `ANDROID_PYTHON=python3.11 bash android/build_apk.sh` |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |

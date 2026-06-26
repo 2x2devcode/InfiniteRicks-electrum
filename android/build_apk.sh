@@ -318,6 +318,23 @@ find_ndk_sdk() {
     fi
     export ANDROID_NDK_HOME="${NDK_PATH:-}"
     export ANDROID_SDK_ROOT="${SDK_PATH:-}"
+    fix_android_sdk_layout "${SDK_PATH:-}"
+}
+
+fix_android_sdk_layout() {
+    local sdk="$1"
+    local legacy_bin cmdline_bin
+    [[ -n "$sdk" && -d "$sdk" ]] || return 0
+    legacy_bin="$sdk/tools/bin"
+    cmdline_bin="$sdk/cmdline-tools/bin"
+    if [[ ! -x "$cmdline_bin/sdkmanager" ]]; then
+        log "WARNING: sdkmanager not found at $cmdline_bin/sdkmanager"
+        return 0
+    fi
+    mkdir -p "$legacy_bin"
+    ln -sfn "$cmdline_bin/sdkmanager" "$legacy_bin/sdkmanager"
+    [[ -x "$cmdline_bin/avdmanager" ]] && ln -sfn "$cmdline_bin/avdmanager" "$legacy_bin/avdmanager"
+    log "Linked buildozer sdkmanager -> $legacy_bin/sdkmanager"
 }
 
 run_android_deploy() {
@@ -339,6 +356,7 @@ run_android_deploy() {
         --wheel-shiboken "$SHIBOKEN_WHEEL" \
         --extra-ignore-dirs ".venv-android,.venv,android/wheels,tests,.git" \
         --extra-modules "Network" \
+        --keep-deployment-files \
         ${NDK_PATH:+--ndk-path "$NDK_PATH"} \
         ${SDK_PATH:+--sdk-path "$SDK_PATH"} \
         "$@"

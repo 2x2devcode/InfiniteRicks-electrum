@@ -45,6 +45,11 @@ def patch_buildozer_spec(project_dir: Path) -> None:
         if item not in parts:
             parts.append(item)
     parser.set("app", "requirements", ",".join(parts))
+    if not parser.has_section("buildozer"):
+        parser.add_section("buildozer")
+    parser.set("buildozer", "warn_on_root", "0")
+    if not parser.has_option("app", "android.accept_sdk_license"):
+        parser.set("app", "android.accept_sdk_license", "True")
     with spec.open("w", encoding="utf-8") as handle:
         parser.write(handle)
     logging.info("[deploy_wallet] Updated buildozer.spec requirements")
@@ -60,7 +65,7 @@ def deploy(
     init: bool,
     loglevel: int,
     dry_run: bool,
-    keep_deployment_files: bool,
+    keep_deployment_files: bool = True,
     force: bool,
     extra_ignore_dirs: str | None,
     extra_modules: str | None,
@@ -144,7 +149,8 @@ def main() -> int:
     parser.add_argument("--init", action="store_true")
     parser.add_argument("-v", "--verbose", action="store_const", dest="loglevel", const=logging.INFO)
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--keep-deployment-files", action="store_true")
+    parser.add_argument("--keep-deployment-files", action="store_true", default=True)
+    parser.add_argument("--clean-deployment-files", action="store_true")
     parser.add_argument("-f", "--force", action="store_true")
     parser.add_argument("--name", type=str)
     parser.add_argument("--wheel-pyside", type=lambda p: Path(p).resolve(), required=True)
@@ -168,7 +174,7 @@ def main() -> int:
         args.init,
         args.loglevel or logging.WARNING,
         args.dry_run,
-        args.keep_deployment_files,
+        not args.clean_deployment_files,
         args.force,
         args.extra_ignore_dirs,
         args.extra_modules,
