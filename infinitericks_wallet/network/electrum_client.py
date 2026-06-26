@@ -22,6 +22,18 @@ from infinitericks_wallet.config.chainparams import (
 logger = logging.getLogger(__name__)
 
 
+def _client_timeouts() -> tuple[int, int, int, float]:
+    """Return connect timeout, request timeout, max attempts, reconnect base."""
+    try:
+        from infinitericks_wallet.platform.paths import is_android_runtime
+
+        if is_android_runtime():
+            return 8, 30, 3, 1.5
+    except Exception:
+        pass
+    return CONNECT_TIMEOUT, REQUEST_TIMEOUT, MAX_RECONNECT_ATTEMPTS, RECONNECT_DELAY_BASE
+
+
 class ElectrumClientError(Exception):
     pass
 
@@ -53,11 +65,12 @@ class ElectrumClient:
         return f"{host}:{port}"
 
     def connect(self) -> None:
+        connect_timeout, request_timeout, max_attempts, delay_base = _client_timeouts()
         last_error: Optional[Exception] = None
-        for attempt in range(MAX_RECONNECT_ATTEMPTS):
+        for attempt in range(max_attempts):
             host, port, use_ssl = self._servers[self._server_index]
             try:
-                raw_sock = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT)
+                raw_sock = socket.create_connection((host, port), timeout=connect_timeout)
                 if use_ssl:
                     ctx = ssl.create_default_context()
                     ctx.check_hostname = False
@@ -65,7 +78,7 @@ class ElectrumClient:
                     self._sock = ctx.wrap_socket(raw_sock, server_hostname=host)
                 else:
                     self._sock = raw_sock  # type: ignore
-                self._sock.settimeout(REQUEST_TIMEOUT)
+                self._sock.settimeout(request_timeout)
                 self._connected = True
                 self._stop.clear()
                 self._reader_thread = threading.Thread(target=self._read_loop, daemon=True)
@@ -78,7 +91,7 @@ class ElectrumClient:
                 logger.warning("Connection attempt %d failed: %s", attempt + 1, exc)
                 self._disconnect()
                 self._server_index = (self._server_index + 1) % len(self._servers)
-                time.sleep(RECONNECT_DELAY_BASE ** min(attempt, 5))
+                time.sleep(delay_base ** min(attempt, 5))
         raise ElectrumClientError(f"Failed to connect: {last_error}")
 
     def _disconnect(self) -> None:
@@ -130,13 +143,14 @@ class ElectrumClient:
     def request(self, method: str, params: Optional[List[Any]] = None) -> Any:
         if not self._connected or not self._sock:
             raise ElectrumClientError("Not connected")
+        _, request_timeout, _, _ = _client_timeouts()
         with self._lock:
             self._request_id += 1
             req_id = self._request_id
             payload = json.dumps({"jsonrpc": "2.0", "method": method, "params": params or [], "id": req_id})
             try:
                 self._sock.sendall((payload + "\n").encode("utf-8"))
-                deadline = time.time() + REQUEST_TIMEOUT
+                deadline = time.time() + request_timeout
                 while time.time() < deadline:
                     for line in self._buffer.split(b"\n"):
                         if not line.strip():
