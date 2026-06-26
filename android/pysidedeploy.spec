@@ -13,7 +13,6 @@ modules = Core, Gui, Widgets, Network
 
 [android]
 arch = aarch64
-plugins = platforms, platforminputcontexts
 
 [buildozer]
 mode = debug
