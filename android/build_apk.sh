@@ -377,7 +377,7 @@ run_android_deploy() {
 
     cd "$PROJECT_ROOT"
     clean_android_build_cache
-    log "Running Android deploy (deploy_wallet v6, argon2-cffi==20.1.0)..."
+    log "Running Android deploy (deploy_wallet v7, argon2 hostpython deps)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "infinitericks_wallet" \
         --config-file "$SPEC_FILE" \

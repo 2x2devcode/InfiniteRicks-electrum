@@ -1,0 +1,11 @@
+--- a/setup.py
++++ b/setup.py
+@@ -91,7 +91,7 @@ CLASSIFIERS = [
+     "Topic :: Software Development :: Libraries :: Python Modules",
+ ]
+ 
+-SETUP_REQUIRES = ["cffi"]
++SETUP_REQUIRES = ["cffi", "pycparser"]
+ if windows and sys.version_info[0] == 2:
+     # required for "Microsoft Visual C++ Compiler for Python 2.7"
+     # https://www.microsoft.com/en-us/download/details.aspx?id=44266
