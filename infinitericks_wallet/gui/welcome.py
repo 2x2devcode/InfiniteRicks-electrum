@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 from infinitericks_wallet import __app_name__
@@ -21,11 +21,11 @@ class WelcomeScreen(QWidget):
         title = QLabel(__app_name__)
         title.setObjectName("title")
         title.setStyleSheet("font-size: 28px; font-weight: bold; color: #58a6ff;")
-        title.setAlignment(0x0004)  # AlignCenter
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         subtitle = QLabel("Carteira leve SPV para InfiniteRicks")
         subtitle.setStyleSheet("font-size: 16px; color: #8b949e;")
-        subtitle.setAlignment(0x0004)
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout.addWidget(title)
         layout.addWidget(subtitle)
