@@ -65,10 +65,10 @@ def deploy(
     init: bool,
     loglevel: int,
     dry_run: bool,
-    keep_deployment_files: bool = True,
     force: bool,
     extra_ignore_dirs: str | None,
     extra_modules: str | None,
+    keep_deployment_files: bool = True,
 ) -> int:
     logging.basicConfig(level=loglevel)
 
@@ -174,10 +174,10 @@ def main() -> int:
         args.init,
         args.loglevel or logging.WARNING,
         args.dry_run,
-        not args.clean_deployment_files,
         args.force,
         args.extra_ignore_dirs,
         args.extra_modules,
+        not args.clean_deployment_files,
     )
 
 
