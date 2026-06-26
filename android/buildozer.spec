@@ -7,7 +7,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json,qss
 version = 1.0.0
 
-requirements = hostpython3==3.11.9,python3==3.11.9,shiboken6,PySide6,setuptools,pycparser,cffi,coincurve,mnemonic,argon2-cffi,cryptography,qrcode,pillow,scrypt,openssl
+requirements = hostpython3==3.11.9,python3==3.11.9,shiboken6,PySide6,setuptools,pycparser,cffi,coincurve,mnemonic,argon2-cffi==20.1.0,cryptography,qrcode,pillow,scrypt,openssl
 
 orientation = portrait
 fullscreen = 0
