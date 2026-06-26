@@ -33,10 +33,14 @@ python main.py
 
 Use `pyside6-android-deploy` (ferramenta oficial Qt). **Não** use `pyside6-deploy --android-platform` — esse argumento não existe.
 
-### Passo 1: Python 3.10 ou 3.11
+### Passo 1: Python 3.11 (obrigatório para APK)
+
+Os wheels oficiais do Qt são **cp311** apenas. Python 3.10 serve para testes desktop, mas o APK exige 3.11:
 
 ```bash
-python3.10 --version   # deve ser 3.10.x ou 3.11.x
+apt install -y python3.11 python3.11-venv
+python3.11 --version
+export ANDROID_PYTHON=python3.11
 ```
 
 ### Passo 2: JDK 17
@@ -61,20 +65,32 @@ Isso baixa o NDK/SDK para `~/.pyside6_android_deploy` (ou `~/.pyside6-android-de
 
 ### Passo 4: Wheels Android PySide6
 
-Coloque os wheels em `android/wheels/`:
+O script baixa automaticamente do CDN oficial do Qt. Também pode rodar só o download:
 
 ```bash
-pip install qtpip
-qtpip download PySide6 --android --arch aarch64 -d android/wheels
-qtpip download shiboken6 --android --arch aarch64 -d android/wheels
+bash android/build_apk.sh --download-wheels
 ```
 
-Alternativa: baixe de [Qt for Python releases](https://download.qt.io/official_releases/QtForPython/).
+Isso salva em `android/wheels/` (~160MB total). Versão específica:
+
+```bash
+PYSIDE_ANDROID_VERSION=6.10.3 bash android/build_apk.sh --download-wheels
+```
+
+Manual (alternativa):
+
+```bash
+mkdir -p android/wheels
+curl -fL -o android/wheels/PySide6-6.10.3-6.10.3-cp311-cp311-android_aarch64.whl \
+  https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.3-6.10.3-cp311-cp311-android_aarch64.whl
+curl -fL -o android/wheels/shiboken6-6.10.3-6.10.3-cp311-cp311-android_aarch64.whl \
+  https://download.qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.10.3-6.10.3-cp311-cp311-android_aarch64.whl
+```
 
 ### Passo 5: Compilar APK
 
 ```bash
-bash android/build_apk.sh
+ANDROID_PYTHON=python3.11 bash android/build_apk.sh
 ```
 
 O script usa `pyside6-android-deploy` com `android/pysidedeploy.spec`. O APK de debug aparece no diretório do projeto ou em `deployment/`.
@@ -105,7 +121,8 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
 | `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
 | `Java Runtime not found` | Instale JDK 17: `apt install openjdk-17-jdk` (o script tenta instalar sozinho) |
-| Wheels Android ausentes | Baixe PySide6/shiboken6 `android_aarch64` em `android/wheels/` |
+| Wheels Android ausentes | Rode `bash android/build_apk.sh --download-wheels` |
+| Python 3.10 no build APK | Use Python 3.11: `ANDROID_PYTHON=python3.11 bash android/build_apk.sh` |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |

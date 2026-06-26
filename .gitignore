@@ -13,3 +13,4 @@ htmlcov/
 .vscode/
 *.apk
 *.aab
+android/wheels/*.whl

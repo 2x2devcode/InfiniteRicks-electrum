@@ -3,7 +3,7 @@
 #
 # Requirements:
 #   - Ubuntu 22.04+ (Linux host)
-#   - Python 3.10 or 3.11 (buildozer does NOT support 3.12+)
+#   - Python 3.11 for APK build (official Qt wheels are cp311 only)
 #   - JDK 17, Android SDK/NDK
 #   - PySide6 + shiboken6 Android wheels (see setup_android_wheels below)
 #
@@ -11,6 +11,7 @@
 #   bash android/build_apk.sh              # full build
 #   bash android/build_apk.sh --init       # generate pysidedeploy.spec only
 #   bash android/build_apk.sh --setup-ndk  # download SDK/NDK into cache
+#   bash android/build_apk.sh --download-wheels  # fetch PySide6/shiboken6 wheels
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,8 +19,24 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 SPEC_FILE="$SCRIPT_DIR/pysidedeploy.spec"
 VENV="$PROJECT_ROOT/.venv-android"
 CACHE_DIRS=("${HOME}/.pyside6_android_deploy" "${HOME}/.pyside6-android-deploy")
+QT_WHEEL_BASE_PYSIDE="https://download.qt.io/official_releases/QtForPython/pyside6"
+QT_WHEEL_BASE_SHIBOKEN="https://download.qt.io/official_releases/QtForPython/shiboken6"
 PY_MIN=3.10
 PY_MAX=3.11
+
+resolve_android_python() {
+    if [[ -n "${ANDROID_PYTHON:-}" ]]; then
+        echo "$ANDROID_PYTHON"
+        return 0
+    fi
+    if command -v python3.11 &>/dev/null; then
+        echo python3.11
+        return 0
+    fi
+    echo python3
+}
+
+ANDROID_PY="$(resolve_android_python)"
 
 log() { echo "[build_apk] $*"; }
 die() { echo "[build_apk] ERROR: $*" >&2; exit 1; }
@@ -90,9 +107,9 @@ ndk_cache_ready() {
 
 check_python() {
     local ver
-    ver="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
-    log "Python version: $ver"
-    python3 - <<'PY' || die "Python 3.10 or 3.11 required (buildozer breaks on 3.12+)"
+    ver="$("$ANDROID_PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    log "Python version: $ver ($ANDROID_PY)"
+    "$ANDROID_PY" - <<'PY' || die "Python 3.10 or 3.11 required (buildozer breaks on 3.12+)"
 import sys
 v = sys.version_info
 if not ((3, 10) <= (v.major, v.minor) <= (3, 11)):
@@ -100,10 +117,28 @@ if not ((3, 10) <= (v.major, v.minor) <= (3, 11)):
 PY
 }
 
+check_python_apk() {
+    local ver
+    ver="$("$ANDROID_PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    if [[ "$ver" != "3.11" ]]; then
+        die "Android APK build requires Python 3.11 (official Qt wheels are cp311 only). Install: apt install python3.11 python3.11-venv && ANDROID_PYTHON=python3.11 bash android/build_apk.sh"
+    fi
+}
+
 setup_venv() {
+    local wanted_ver
+    wanted_ver="$("$ANDROID_PY" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    if [[ -d "$VENV" && -x "$VENV/bin/python" ]]; then
+        local venv_ver
+        venv_ver="$("$VENV/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+        if [[ "$venv_ver" != "$wanted_ver" ]]; then
+            log "Recreating Android venv (Python $venv_ver -> $wanted_ver)"
+            rm -rf "$VENV"
+        fi
+    fi
     if [[ ! -d "$VENV" ]]; then
         log "Creating Android build venv at $VENV"
-        python3 -m venv "$VENV"
+        "$ANDROID_PY" -m venv "$VENV"
     fi
     # shellcheck disable=SC1091
     source "$VENV/bin/activate"
@@ -135,6 +170,65 @@ download_wheels_qtpip() {
         qtpip download PySide6 --android --arch aarch64 -d "$PROJECT_ROOT/android/wheels" || true
         qtpip download shiboken6 --android --arch aarch64 -d "$PROJECT_ROOT/android/wheels" || true
     fi
+}
+
+latest_qt_android_wheel() {
+    local base="$1" prefix="$2"
+    curl -fsSL "${base}/" | grep -oE "${prefix}-[0-9.]+-[0-9.]+-cp311-cp311-android_aarch64\.whl" | sort -V | tail -1
+}
+
+matching_qt_android_wheel() {
+    local base="$1" prefix="$2" version="$3"
+    curl -fsSL "${base}/" | grep -oE "${prefix}-${version}-[^\"]+-cp311-cp311-android_aarch64\.whl" | head -1
+}
+
+download_file_if_missing() {
+    local url="$1" dest="$2" label="$3"
+    if [[ -f "$dest" ]]; then
+        log "Already have $(basename "$dest")"
+        return 0
+    fi
+    log "Downloading $label (~80MB)..."
+    curl -fL --progress-bar -o "$dest" "$url"
+}
+
+download_wheels_official() {
+    local wheels_dir="$PROJECT_ROOT/android/wheels"
+    local ver="${PYSIDE_ANDROID_VERSION:-}"
+    local pyside_file shiboken_file pyside_ver
+
+    mkdir -p "$wheels_dir"
+    log "Fetching PySide6 Android wheel list from Qt CDN..."
+
+    if [[ -n "$ver" ]]; then
+        pyside_file="$(matching_qt_android_wheel "$QT_WHEEL_BASE_PYSIDE" "PySide6" "$ver")"
+        shiboken_file="$(matching_qt_android_wheel "$QT_WHEEL_BASE_SHIBOKEN" "shiboken6" "$ver")"
+    else
+        pyside_file="$(latest_qt_android_wheel "$QT_WHEEL_BASE_PYSIDE" "PySide6")"
+        pyside_ver="$(echo "$pyside_file" | sed -E 's/^PySide6-([0-9.]+)-.*/\1/')"
+        shiboken_file="$(matching_qt_android_wheel "$QT_WHEEL_BASE_SHIBOKEN" "shiboken6" "$pyside_ver")"
+    fi
+
+    [[ -n "$pyside_file" && -n "$shiboken_file" ]] || die "Could not find cp311 android_aarch64 wheels on Qt CDN"
+
+    log "PySide6 wheel: $pyside_file"
+    log "Shiboken6 wheel: $shiboken_file"
+    download_file_if_missing "$QT_WHEEL_BASE_PYSIDE/$pyside_file" "$wheels_dir/$pyside_file" "$pyside_file"
+    download_file_if_missing "$QT_WHEEL_BASE_SHIBOKEN/$shiboken_file" "$wheels_dir/$shiboken_file" "$shiboken_file"
+}
+
+download_wheels_if_missing() {
+    find_wheels
+    if [[ -n "${PYSIDE_WHEEL:-}" && -n "${SHIBOKEN_WHEEL:-}" ]]; then
+        return 0
+    fi
+    download_wheels_qtpip
+    find_wheels
+    if [[ -n "${PYSIDE_WHEEL:-}" && -n "${SHIBOKEN_WHEEL:-}" ]]; then
+        return 0
+    fi
+    download_wheels_official
+    find_wheels
 }
 
 setup_ndk_sdk() {
@@ -205,25 +299,20 @@ run_android_deploy() {
 print_wheel_help() {
     cat <<'EOF'
 
-Android wheels not found. Download PySide6 Android wheels:
+Android wheels not found. The script can download them automatically:
 
-  Option A — qtpip (if Qt account configured):
-    pip install qtpip
-    qtpip download PySide6 --android --arch aarch64 -d android/wheels
-    qtpip download shiboken6 --android --arch aarch64 -d android/wheels
+  bash android/build_apk.sh --download-wheels
 
-  Option B — Qt downloads page:
-    https://download.qt.io/official_releases/QtForPython/
-    Place PySide6-*-android_aarch64.whl and shiboken6-*-android_aarch64.whl
-    into android/wheels/
+Or download manually (requires Python 3.11 wheels, cp311):
 
-  Option C — cross-compile (advanced):
-    See docs/INSTALL.md section "Build Android APK"
+  mkdir -p android/wheels
+  curl -LO https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.10.3-6.10.3-cp311-cp311-android_aarch64.whl
+  curl -LO https://download.qt.io/official_releases/QtForPython/shiboken6/shiboken6-6.10.3-6.10.3-cp311-cp311-android_aarch64.whl
+  mv PySide6-*.whl shiboken6-*.whl android/wheels/
 
-Then set:
-  export PYSIDE_WHEEL=android/wheels/PySide6-....whl
-  export SHIBOKEN_WHEEL=android/wheels/shiboken6-....whl
-  bash android/build_apk.sh
+APK build requires Python 3.11:
+  apt install python3.11 python3.11-venv
+  ANDROID_PYTHON=python3.11 bash android/build_apk.sh
 
 EOF
 }
@@ -247,6 +336,13 @@ main() {
             log "SDK: ${SDK_PATH:-not found}"
             exit 0
             ;;
+        --download-wheels)
+            download_wheels_official
+            find_wheels
+            log "PySide wheel: ${PYSIDE_WHEEL:-not found}"
+            log "Shiboken wheel: ${SHIBOKEN_WHEEL:-not found}"
+            exit 0
+            ;;
         --help|-h)
             head -20 "$0"
             exit 0
@@ -255,8 +351,8 @@ main() {
 
     setup_ndk_sdk
     find_ndk_sdk
-    download_wheels_qtpip
-    find_wheels
+    check_python_apk
+    download_wheels_if_missing
 
     if [[ -z "${PYSIDE_WHEEL:-}" || -z "${SHIBOKEN_WHEEL:-}" ]]; then
         print_wheel_help
