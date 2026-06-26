@@ -20,7 +20,7 @@ from deploy_lib import cleanup, PythonExecutable
 from deploy_lib.android import AndroidData, AndroidConfig
 from deploy_lib.android.buildozer import Buildozer, BuildozerConfig
 
-DEPLOY_WALLET_VERSION = 3
+DEPLOY_WALLET_VERSION = 4
 
 WALLET_REQUIREMENTS = (
     "coincurve",
@@ -37,6 +37,7 @@ ANDROID_PYTHON_VERSION = "3.11.9"
 ANDROID_PACKAGE_NAME = "infinitericks_wallet"
 ANDROID_PACKAGE_DOMAIN = "com.infinitericks"
 PYTHON_REQUIREMENT = f"python3=={ANDROID_PYTHON_VERSION}"
+HOSTPYTHON_REQUIREMENT = f"hostpython3=={ANDROID_PYTHON_VERSION}"
 
 
 def _read_buildozer_spec(project_dir: Path) -> ConfigParser | None:
@@ -75,6 +76,7 @@ def patch_buildozer_spec(project_dir: Path, config: AndroidConfig) -> None:
         raise RuntimeError("buildozer.spec has no [app] section")
 
     requirements = [
+        HOSTPYTHON_REQUIREMENT,
         PYTHON_REQUIREMENT,
         "shiboken6",
         "PySide6",
@@ -127,6 +129,10 @@ def verify_buildozer_spec(project_dir: Path) -> None:
     if PYTHON_REQUIREMENT not in requirements.replace(" ", ""):
         raise RuntimeError(
             f"buildozer.spec must pin {PYTHON_REQUIREMENT}, got: {requirements}"
+        )
+    if HOSTPYTHON_REQUIREMENT not in requirements.replace(" ", ""):
+        raise RuntimeError(
+            f"buildozer.spec must pin {HOSTPYTHON_REQUIREMENT}, got: {requirements}"
         )
 
     logging.info(

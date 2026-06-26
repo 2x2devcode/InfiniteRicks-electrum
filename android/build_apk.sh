@@ -376,7 +376,7 @@ run_android_deploy() {
 
     cd "$PROJECT_ROOT"
     clean_android_build_cache
-    log "Running Android deploy (deploy_wallet v3, pinned python3==3.11.9)..."
+    log "Running Android deploy (deploy_wallet v4, hostpython3+python3==3.11.9)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "infinitericks_wallet" \
         --config-file "$SPEC_FILE" \

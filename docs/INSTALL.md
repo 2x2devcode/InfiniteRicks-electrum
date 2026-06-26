@@ -136,7 +136,7 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `Java Runtime not found` | Instale JDK 17: `apt install openjdk-17-jdk` (o script tenta instalar sozinho) |
 | `C compiler cannot create executables` | Rode `git pull`, instale deps: `apt install build-essential libc6-dev-i386 lib32z1-dev zlib1g-dev`, limpe `rm -rf .buildozer buildozer.spec deployment` e tente de novo |
 | `dist_name` com espaços | O nome interno do pacote não pode ter espaços — use `infinitericks_wallet` |
-| Python 3.10 no build APK | Use Python 3.11: `ANDROID_PYTHON=python3.11 bash android/build_apk.sh` |
+| `hostpython3` 3.14 vs `python3` 3.11.9 | Requer `hostpython3==3.11.9,python3==3.11.9` (deploy_wallet v4+); rode `bash android/build_apk.sh` de novo |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |
