@@ -140,6 +140,8 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `No module named 'pycparser'` (argon2-cffi) | deploy_wallet v7+ patcha `setup_requires` e instala `pycparser` no hostpython; `git pull` e rebuilde |
 | `rustup` was not found (cryptography) | O script instala Rust automaticamente (deploy_wallet v8+); ou: `curl https://sh.rustup.rs -sSf \| sh` |
 | `setup.py` not found (argon2-cffi) | Android usa `argon2-cffi==20.1.0` (23.x é só pyproject.toml); deploy_wallet v6+ |
+| App abre e fecha em segundos | Recompile com `git pull` (deploy_wallet v9+ compila `coincurve` para arm64). Capture o traceback: `adb logcat -d \| findstr /I "python FATAL coincurve ImportError Traceback infinitericks"` |
+| `coincurve` / arquitetura errada no APK | Não instale `coincurve` no venv Android (`requirements-host.txt` só tem pacotes pure-Python). Limpe cache: `rm -rf .buildozer deployment` e rebuilde |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |
