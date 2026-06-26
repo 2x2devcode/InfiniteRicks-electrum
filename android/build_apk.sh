@@ -24,6 +24,70 @@ PY_MAX=3.11
 log() { echo "[build_apk] $*"; }
 die() { echo "[build_apk] ERROR: $*" >&2; exit 1; }
 
+detect_java_home() {
+    if [[ -n "${JAVA_HOME:-}" && -x "${JAVA_HOME}/bin/java" ]]; then
+        echo "$JAVA_HOME"
+        return 0
+    fi
+    local candidate
+    for candidate in /usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/java-11-openjdk-*; do
+        [[ -x "$candidate/bin/java" ]] || continue
+        echo "$candidate"
+        return 0
+    done
+    if command -v java &>/dev/null; then
+        local java_bin
+        java_bin="$(readlink -f "$(command -v java)" 2>/dev/null || command -v java)"
+        if [[ "$java_bin" == */bin/java ]]; then
+            dirname "$(dirname "$java_bin")"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+ensure_java() {
+    local java_home
+    if java_home="$(detect_java_home)"; then
+        export JAVA_HOME="$java_home"
+        export PATH="$JAVA_HOME/bin:$PATH"
+        log "Using JAVA_HOME=$JAVA_HOME ($(java -version 2>&1 | head -1))"
+        return 0
+    fi
+
+    log "JDK not found — installing openjdk-17-jdk (required by sdkmanager)..."
+    if command -v apt-get &>/dev/null; then
+        if [[ "$(id -u)" -eq 0 ]]; then
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-17-jdk
+        elif command -v sudo &>/dev/null; then
+            sudo apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive sudo apt-get install -y openjdk-17-jdk
+        else
+            die "JDK 17 required. Install: apt install openjdk-17-jdk"
+        fi
+        java_home="$(detect_java_home)" || die "JDK install failed"
+        export JAVA_HOME="$java_home"
+        export PATH="$JAVA_HOME/bin:$PATH"
+        log "Installed JAVA_HOME=$JAVA_HOME"
+        return 0
+    fi
+
+    die "JDK 17 required for sdkmanager. Install openjdk-17-jdk and export JAVA_HOME."
+}
+
+sdk_is_complete() {
+    local sdk_dir="$1"
+    [[ -d "$sdk_dir/platform-tools" ]] \
+        && [[ -d "$sdk_dir/platforms" ]] \
+        && [[ -n "$(find "$sdk_dir/platforms" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)" ]]
+}
+
+ndk_cache_ready() {
+    local cache="$1"
+    find "$cache" -maxdepth 3 -type d -name 'android-ndk*' 2>/dev/null | grep -q .
+}
+
 check_python() {
     local ver
     ver="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
@@ -74,13 +138,16 @@ download_wheels_qtpip() {
 }
 
 setup_ndk_sdk() {
-    local cache
+    local cache sdk_dir
     for cache in "${CACHE_DIRS[@]}"; do
-        if find "$cache" -maxdepth 3 -type d -name 'android-ndk*' 2>/dev/null | grep -q .; then
+        sdk_dir="$cache/android-sdk"
+        if ndk_cache_ready "$cache" && [[ -d "$sdk_dir" ]] && sdk_is_complete "$sdk_dir"; then
             log "Using cached NDK/SDK under $cache"
             return 0
         fi
     done
+
+    ensure_java
     log "Downloading Android NDK/SDK (first time only, ~1GB)..."
     local tmp
     tmp="$(mktemp -d)"
@@ -165,6 +232,7 @@ main() {
     log "=== InfiniteRicks Wallet Android Build ==="
     check_python
     setup_venv
+    ensure_java
 
     case "${1:-}" in
         --init)

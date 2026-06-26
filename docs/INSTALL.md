@@ -39,7 +39,19 @@ Use `pyside6-android-deploy` (ferramenta oficial Qt). **Não** use `pyside6-depl
 python3.10 --version   # deve ser 3.10.x ou 3.11.x
 ```
 
-### Passo 2: NDK e SDK (primeira vez)
+### Passo 2: JDK 17
+
+O `sdkmanager` exige Java. No Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install -y openjdk-17-jdk
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+```
+
+O script `build_apk.sh` tenta instalar automaticamente se o JDK não estiver presente.
+
+### Passo 3: NDK e SDK (primeira vez)
 
 ```bash
 bash android/build_apk.sh --setup-ndk
@@ -47,7 +59,7 @@ bash android/build_apk.sh --setup-ndk
 
 Isso baixa o NDK/SDK para `~/.pyside6_android_deploy` (ou `~/.pyside6-android-deploy`).
 
-### Passo 3: Wheels Android PySide6
+### Passo 4: Wheels Android PySide6
 
 Coloque os wheels em `android/wheels/`:
 
@@ -59,7 +71,7 @@ qtpip download shiboken6 --android --arch aarch64 -d android/wheels
 
 Alternativa: baixe de [Qt for Python releases](https://download.qt.io/official_releases/QtForPython/).
 
-### Passo 4: Compilar APK
+### Passo 5: Compilar APK
 
 ```bash
 bash android/build_apk.sh
@@ -92,6 +104,8 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `unrecognized arguments: --android-platform` | Use `bash android/build_apk.sh` (chama `pyside6-android-deploy`, não `pyside6-deploy`) |
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
 | `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
+| `Java Runtime not found` | Instale JDK 17: `apt install openjdk-17-jdk` (o script tenta instalar sozinho) |
+| Wheels Android ausentes | Baixe PySide6/shiboken6 `android_aarch64` em `android/wheels/` |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |
