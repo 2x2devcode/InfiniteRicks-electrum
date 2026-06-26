@@ -1,5 +1,5 @@
 [app]
-title = InfiniteRicks Wallet
+title = infinitericks_wallet
 project_dir = ..
 input_file = main.py
 exec_directory = deployment

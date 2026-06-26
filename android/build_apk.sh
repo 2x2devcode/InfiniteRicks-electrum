@@ -63,6 +63,26 @@ detect_java_home() {
     return 1
 }
 
+ensure_build_host_deps() {
+    if ! command -v apt-get &>/dev/null; then
+        return 0
+    fi
+    log "Checking Android cross-compile host dependencies..."
+    dpkg --add-architecture i386 2>/dev/null || true
+    local packages=(
+        build-essential git zip unzip autoconf automake libtool
+        pkg-config zlib1g-dev libffi-dev libssl-dev cmake
+        libc6-dev-i386 lib32z1-dev
+    )
+    if [[ "$(id -u)" -eq 0 ]]; then
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}" || true
+    elif command -v sudo &>/dev/null; then
+        sudo apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive sudo apt-get install -y "${packages[@]}" || true
+    fi
+}
+
 ensure_java() {
     local java_home
     if java_home="$(detect_java_home)"; then
@@ -348,7 +368,7 @@ run_android_deploy() {
     cd "$PROJECT_ROOT"
     log "Running Android deploy (with wallet buildozer requirements)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
-        --name "InfiniteRicks Wallet" \
+        --name "infinitericks_wallet" \
         --config-file "$SPEC_FILE" \
         --force \
         --verbose \
@@ -418,6 +438,7 @@ main() {
     setup_ndk_sdk
     find_ndk_sdk
     check_python_apk
+    ensure_build_host_deps
     download_wheels_if_missing
 
     if [[ -z "${PYSIDE_WHEEL:-}" || -z "${SHIBOKEN_WHEEL:-}" ]]; then

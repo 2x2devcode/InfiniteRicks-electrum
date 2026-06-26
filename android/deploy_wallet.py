@@ -30,6 +30,10 @@ WALLET_REQUIREMENTS = (
     "openssl",
 )
 
+ANDROID_PYTHON_VERSION = "3.11.9"
+ANDROID_PACKAGE_NAME = "infinitericks_wallet"
+ANDROID_PACKAGE_DOMAIN = "com.infinitericks"
+
 
 def patch_buildozer_spec(project_dir: Path) -> None:
     spec = project_dir / "buildozer.spec"
@@ -39,20 +43,30 @@ def patch_buildozer_spec(project_dir: Path) -> None:
     parser.read(spec)
     if not parser.has_section("app"):
         return
-    current = parser.get("app", "requirements", fallback="python3,shiboken6,PySide6")
-    parts = [item.strip() for item in current.split(",") if item.strip()]
-    for item in WALLET_REQUIREMENTS:
-        if item not in parts:
-            parts.append(item)
-    parser.set("app", "requirements", ",".join(parts))
+
+    requirements = [
+        f"python3=={ANDROID_PYTHON_VERSION}",
+        "shiboken6",
+        "PySide6",
+        *WALLET_REQUIREMENTS,
+    ]
+    parser.set("app", "requirements", ",".join(requirements))
+    parser.set("app", "package.name", ANDROID_PACKAGE_NAME)
+    parser.set("app", "package.domain", ANDROID_PACKAGE_DOMAIN)
+    parser.set("app", "title", ANDROID_PACKAGE_NAME)
+    parser.set("app", "android.api", "33")
+    parser.set("app", "android.minapi", "24")
+    parser.set("app", "android.accept_sdk_license", "True")
+
     if not parser.has_section("buildozer"):
         parser.add_section("buildozer")
     parser.set("buildozer", "warn_on_root", "0")
-    if not parser.has_option("app", "android.accept_sdk_license"):
-        parser.set("app", "android.accept_sdk_license", "True")
+    parser.set("buildozer", "log_level", "2")
+
     with spec.open("w", encoding="utf-8") as handle:
         parser.write(handle)
-    logging.info("[deploy_wallet] Updated buildozer.spec requirements")
+    logging.info("[deploy_wallet] Patched buildozer.spec (python %s, package %s)",
+                 ANDROID_PYTHON_VERSION, ANDROID_PACKAGE_NAME)
 
 
 def deploy(

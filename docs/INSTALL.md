@@ -89,6 +89,12 @@ curl -fL -o android/wheels/shiboken6-6.10.3-6.10.3-cp311-cp311-android_aarch64.w
 
 ### Passo 5: Compilar APK
 
+Limpe builds anteriores com nome errado (espaços no pacote) ou falha de compilador:
+
+```bash
+rm -rf .buildozer buildozer.spec deployment
+```
+
 ```bash
 ANDROID_PYTHON=python3.11 bash android/build_apk.sh
 ```
@@ -121,7 +127,8 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
 | `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
 | `Java Runtime not found` | Instale JDK 17: `apt install openjdk-17-jdk` (o script tenta instalar sozinho) |
-| `sdkmanager path ... does not exist` | Rode `git pull` — o script cria symlink `tools/bin/sdkmanager` para o SDK moderno |
+| `C compiler cannot create executables` | Rode `git pull`, instale deps: `apt install build-essential libc6-dev-i386 lib32z1-dev zlib1g-dev`, limpe `rm -rf .buildozer buildozer.spec deployment` e tente de novo |
+| `dist_name` com espaços | O nome interno do pacote não pode ter espaços — use `infinitericks_wallet` |
 | Python 3.10 no build APK | Use Python 3.11: `ANDROID_PYTHON=python3.11 bash android/build_apk.sh` |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
