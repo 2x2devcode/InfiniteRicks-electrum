@@ -1,13 +1,13 @@
 [app]
 
-title = InfiniteRicks Wallet
+title = infinitericks_wallet
 package.name = infinitericks_wallet
 package.domain = com.infinitericks
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json,qss
 version = 1.0.0
 
-requirements = python3,pyside6,coincurve,mnemonic,argon2-cffi,cryptography,qrcode,pillow,scrypt,openssl
+requirements = python3==3.11.9,shiboken6,PySide6,coincurve,mnemonic,argon2-cffi,cryptography,qrcode,pillow,scrypt,openssl
 
 orientation = portrait
 fullscreen = 0

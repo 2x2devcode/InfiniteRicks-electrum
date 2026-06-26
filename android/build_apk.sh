@@ -357,6 +357,32 @@ fix_android_sdk_layout() {
     log "Linked buildozer sdkmanager -> $legacy_bin/sdkmanager"
 }
 
+clean_stale_android_build() {
+    local marker="$PROJECT_ROOT/.buildozer"
+    local spec="$PROJECT_ROOT/buildozer.spec"
+    local purge=0
+
+    if [[ -d "$marker" ]]; then
+        if find "$marker" -name '* *' -print -quit 2>/dev/null | grep -q .; then
+            log "Detected stale Android build cache (dist name contains spaces)"
+            purge=1
+        fi
+        if [[ -f "$spec" ]] && ! grep -q 'package.name = infinitericks_wallet' "$spec" 2>/dev/null; then
+            log "Detected stale buildozer.spec (wrong package.name)"
+            purge=1
+        fi
+        if [[ -f "$spec" ]] && ! grep -q 'python3==3.11.9' "$spec" 2>/dev/null; then
+            log "Detected stale buildozer.spec (Python not pinned to 3.11.9)"
+            purge=1
+        fi
+    fi
+
+    if [[ "$purge" -eq 1 ]]; then
+        log "Removing .buildozer and buildozer.spec (required after package-name fix)"
+        rm -rf "$marker" "$spec"
+    fi
+}
+
 run_android_deploy() {
     [[ -n "${PYSIDE_WHEEL:-}" ]] || die "PYSIDE_WHEEL not set"
     [[ -n "${SHIBOKEN_WHEEL:-}" ]] || die "SHIBOKEN_WHEEL not set"
@@ -366,6 +392,7 @@ run_android_deploy() {
     fi
 
     cd "$PROJECT_ROOT"
+    clean_stale_android_build
     log "Running Android deploy (with wallet buildozer requirements)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "infinitericks_wallet" \
@@ -432,6 +459,11 @@ main() {
         --help|-h)
             head -20 "$0"
             exit 0
+            ;;
+        --clean)
+            log "Full Android build cache clean"
+            rm -rf "$PROJECT_ROOT/.buildozer" "$PROJECT_ROOT/buildozer.spec" "$PROJECT_ROOT/deployment"
+            shift
             ;;
     esac
 

@@ -89,10 +89,13 @@ curl -fL -o android/wheels/shiboken6-6.10.3-6.10.3-cp311-cp311-android_aarch64.w
 
 ### Passo 5: Compilar APK
 
-Limpe builds anteriores com nome errado (espaços no pacote) ou falha de compilador:
+O script detecta e remove automaticamente cache antiga (nome com espaços, Python sem pin).
+Para limpeza completa manual:
 
 ```bash
 rm -rf .buildozer buildozer.spec deployment
+# ou:
+bash android/build_apk.sh --clean
 ```
 
 ```bash
