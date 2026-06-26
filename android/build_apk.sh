@@ -321,25 +321,26 @@ find_ndk_sdk() {
 }
 
 run_android_deploy() {
-    local extra_args=()
-    [[ -n "${PYSIDE_WHEEL:-}" ]] && extra_args+=(--wheel-pyside="$PYSIDE_WHEEL")
-    [[ -n "${SHIBOKEN_WHEEL:-}" ]] && extra_args+=(--wheel-shiboken="$SHIBOKEN_WHEEL")
-    [[ -n "${NDK_PATH:-}" ]] && extra_args+=(--ndk-path="$NDK_PATH")
-    [[ -n "${SDK_PATH:-}" ]] && extra_args+=(--sdk-path="$SDK_PATH")
+    [[ -n "${PYSIDE_WHEEL:-}" ]] || die "PYSIDE_WHEEL not set"
+    [[ -n "${SHIBOKEN_WHEEL:-}" ]] || die "SHIBOKEN_WHEEL not set"
 
-    if ! command -v pyside6-android-deploy &>/dev/null; then
-        die "pyside6-android-deploy not found. Install: pip install pyside6"
+    if ! python -c "import PySide6" &>/dev/null; then
+        die "PySide6 not found in Android venv"
     fi
 
     cd "$PROJECT_ROOT"
-    log "Running pyside6-android-deploy..."
-    pyside6-android-deploy \
+    log "Running Android deploy (with wallet buildozer requirements)..."
+    python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "InfiniteRicks Wallet" \
         --config-file "$SPEC_FILE" \
         --force \
         --verbose \
+        --wheel-pyside "$PYSIDE_WHEEL" \
+        --wheel-shiboken "$SHIBOKEN_WHEEL" \
         --extra-ignore-dirs ".venv-android,.venv,android/wheels,tests,.git" \
-        "${extra_args[@]}" \
+        --extra-modules "Network" \
+        ${NDK_PATH:+--ndk-path "$NDK_PATH"} \
+        ${SDK_PATH:+--sdk-path "$SDK_PATH"} \
         "$@"
 }
 

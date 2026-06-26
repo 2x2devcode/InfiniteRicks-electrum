@@ -6,7 +6,7 @@ exec_directory = deployment
 icon = resources/icons/app_icon.png
 
 [python]
-android_packages = buildozer, cpython, coincurve, mnemonic, argon2-cffi, cryptography, qrcode, pillow, scrypt
+android_packages = buildozer, cython
 
 [qt]
 modules = Core, Gui, Widgets, Network
