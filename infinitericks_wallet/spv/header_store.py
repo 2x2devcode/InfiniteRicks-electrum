@@ -8,11 +8,12 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from infinitericks_wallet.crypto.block import BlockHeader
+from infinitericks_wallet.platform.paths import headers_file
 
 
 class HeaderStore:
     def __init__(self, path: Optional[Path] = None) -> None:
-        self._path = path or Path.home() / ".infinitericks_wallet" / "headers.json"
+        self._path = path or headers_file()
         self._headers: Dict[int, dict] = {}
         self._tip_height: int = 0
         self._load()

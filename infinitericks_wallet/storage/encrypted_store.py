@@ -18,6 +18,7 @@ from infinitericks_wallet.config.chainparams import (
     ARGON2_SALT_LEN,
     ARGON2_TIME_COST,
 )
+from infinitericks_wallet.platform.paths import wallet_file
 from infinitericks_wallet.wallet.wallet import Wallet
 
 WALLET_VERSION = 1
@@ -25,7 +26,7 @@ WALLET_VERSION = 1
 
 class EncryptedStore:
     def __init__(self, path: Optional[Path] = None) -> None:
-        self._path = path or Path.home() / ".infinitericks_wallet" / "wallet.enc"
+        self._path = path or wallet_file()
         self._path.parent.mkdir(parents=True, exist_ok=True)
 
     @property

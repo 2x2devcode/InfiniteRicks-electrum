@@ -20,7 +20,7 @@ from deploy_lib import cleanup, PythonExecutable
 from deploy_lib.android import AndroidData, AndroidConfig
 from deploy_lib.android.buildozer import Buildozer, BuildozerConfig
 
-DEPLOY_WALLET_VERSION = 8
+DEPLOY_WALLET_VERSION = 9
 
 BUNDLED_RECIPES_DIR = Path(__file__).resolve().parent / "recipes"
 
@@ -32,13 +32,14 @@ P4A_BUILD_DEPS = (
 )
 
 WALLET_REQUIREMENTS = (
-    "coincurve",
+    "asn1crypto",
+    "libsecp256k1",
+    "coincurve==19.0.1",
     "mnemonic",
     "argon2-cffi==20.1.0",
     "cryptography",
     "qrcode",
     "pillow",
-    "scrypt",
     "openssl",
 )
 

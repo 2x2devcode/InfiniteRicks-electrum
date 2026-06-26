@@ -213,7 +213,8 @@ setup_venv() {
     pip install -q pyside6 buildozer cython
     pip install -q pycparser cffi setuptools
     install_android_deploy_deps
-    pip install -q -r "$PROJECT_ROOT/requirements.txt" || true
+    # Native wallet deps are cross-compiled by p4a — only install pure-Python host helpers.
+    pip install -q -r "$SCRIPT_DIR/requirements-host.txt"
 }
 
 install_android_deploy_deps() {
@@ -395,7 +396,7 @@ run_android_deploy() {
     cd "$PROJECT_ROOT"
     export PATH="${HOME}/.cargo/bin:${PATH}"
     clean_android_build_cache
-    log "Running Android deploy (deploy_wallet v8, auto-install rust)..."
+    log "Running Android deploy (deploy_wallet v9, auto-install rust)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "infinitericks_wallet" \
         --config-file "$SPEC_FILE" \

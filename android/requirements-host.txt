@@ -1,0 +1,6 @@
+# Pure-Python packages safe to install on the x86_64 Android build host.
+# Native extensions (coincurve, argon2-cffi, cryptography) are built for
+# arm64 by python-for-android — do NOT pip install them on the host.
+mnemonic>=0.20
+qrcode[pil]>=7.4.2
+Pillow>=10.0.0
