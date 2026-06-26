@@ -77,7 +77,14 @@ def serialize_uint256(value: Union[int, bytes]) -> bytes:
 
 
 def hash160(data: bytes) -> bytes:
-    return hashlib.new("ripemd160", sha256(data)).digest()
+    """RIPEMD160(SHA256(data)) — works on all platforms including Ubuntu 22.04+."""
+    digest = sha256(data)
+    try:
+        return hashlib.new("ripemd160", digest).digest()
+    except (ValueError, OSError):
+        from infinitericks_wallet.crypto.ripemd160 import ripemd160_digest
+
+        return ripemd160_digest(digest)
 
 
 def merkle_hash(left: bytes, right: bytes) -> bytes:

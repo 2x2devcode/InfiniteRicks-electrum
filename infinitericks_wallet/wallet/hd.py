@@ -15,6 +15,7 @@ from infinitericks_wallet.config.chainparams import (
     BIP44_PURPOSE,
     get_derivation_path,
 )
+from infinitericks_wallet.crypto.hash import hash160
 from infinitericks_wallet.crypto.keys import KeyPair
 
 CURVE_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
@@ -29,9 +30,8 @@ class HDKey:
     parent_fingerprint: bytes = b"\x00\x00\x00\x00"
 
     def fingerprint(self) -> bytes:
-        from infinitericks_wallet.crypto.keys import KeyPair
-
-        return hashlib.new("ripemd160", hashlib.sha256(KeyPair.from_private_bytes(self.private_key).public_key).digest()).digest()[:4]
+        pubkey = KeyPair.from_private_bytes(self.private_key).public_key
+        return hash160(pubkey)[:4]
 
     def derive_child(self, index: int) -> "HDKey":
         if index >= 0x80000000:
