@@ -121,7 +121,7 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
 | `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
 | `Java Runtime not found` | Instale JDK 17: `apt install openjdk-17-jdk` (o script tenta instalar sozinho) |
-| Wheels Android ausentes | Rode `bash android/build_apk.sh --download-wheels` |
+| `jinja2` / `pkginfo` / `tqdm` missing | Rode `git pull` e tente de novo — o script instala `requirements-android.txt` do PySide6 |
 | Python 3.10 no build APK | Use Python 3.11: `ANDROID_PYTHON=python3.11 bash android/build_apk.sh` |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |

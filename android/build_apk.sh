@@ -144,7 +144,20 @@ setup_venv() {
     source "$VENV/bin/activate"
     pip install -q --upgrade pip
     pip install -q pyside6 buildozer cython
+    install_android_deploy_deps
     pip install -q -r "$PROJECT_ROOT/requirements.txt" || true
+}
+
+install_android_deploy_deps() {
+    local req_file
+    req_file="$(python -c 'import PySide6, pathlib; print(pathlib.Path(PySide6.__file__).parent / "scripts" / "requirements-android.txt")' 2>/dev/null || true)"
+    if [[ -n "$req_file" && -f "$req_file" ]]; then
+        log "Installing pyside6-android-deploy dependencies..."
+        pip install -q -r "$req_file"
+        return 0
+    fi
+    log "Installing pyside6-android-deploy dependencies (fallback list)..."
+    pip install -q jinja2 pkginfo tqdm "packaging==24.1"
 }
 
 find_wheels() {
