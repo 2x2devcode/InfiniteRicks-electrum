@@ -89,12 +89,16 @@ curl -fL -o android/wheels/shiboken6-6.10.3-6.10.3-cp311-cp311-android_aarch64.w
 
 ### Passo 5: Compilar APK
 
-O script detecta e remove automaticamente cache antiga (nome com espaços, Python sem pin).
-Para limpeza completa manual:
+O script **sempre** limpa `.buildozer`, `buildozer.spec` e `deployment` antes de compilar
+(evita cache com `InfiniteRicks Wallet` no nome, que quebra o NDK). Para manter cache:
 
 ```bash
-rm -rf .buildozer buildozer.spec deployment
-# ou:
+ANDROID_KEEP_CACHE=1 ANDROID_PYTHON=python3.11 bash android/build_apk.sh
+```
+
+Limpeza manual:
+
+```bash
 bash android/build_apk.sh --clean
 ```
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Android deploy wrapper: write buildozer.spec and purge stale p4a cache before build."""
+"""Android deploy wrapper: write buildozer.spec and purge p4a cache before build."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import argparse
 import logging
 import re
 import shutil
+import subprocess
 import sys
 import traceback
 from configparser import ConfigParser
@@ -18,7 +19,9 @@ sys.path.insert(0, str(Path(PySide6.__file__).resolve().parent / "scripts"))
 
 from deploy_lib import cleanup, PythonExecutable
 from deploy_lib.android import AndroidData, AndroidConfig
-from deploy_lib.android.buildozer import Buildozer
+from deploy_lib.android.buildozer import Buildozer, BuildozerConfig
+
+DEPLOY_WALLET_VERSION = 3
 
 WALLET_REQUIREMENTS = (
     "coincurve",
@@ -46,64 +49,20 @@ def _read_buildozer_spec(project_dir: Path) -> ConfigParser | None:
     return parser
 
 
-def spec_needs_refresh(project_dir: Path) -> bool:
-    parser = _read_buildozer_spec(project_dir)
-    if parser is None or not parser.has_section("app"):
-        return True
-
-    package_name = parser.get("app", "package.name", fallback="")
-    requirements = parser.get("app", "requirements", fallback="").replace(" ", "")
-    if package_name != ANDROID_PACKAGE_NAME or " " in package_name:
-        return True
-    if PYTHON_REQUIREMENT not in requirements:
-        return True
-    return False
-
-
-def buildozer_cache_is_stale(project_dir: Path) -> bool:
-    buildozer_dir = project_dir / ".buildozer"
-    if not buildozer_dir.exists():
-        return False
-
-    if spec_needs_refresh(project_dir):
-        return True
-
-    stale_name_pattern = re.compile(r"InfiniteRicks\s+Wallet", re.IGNORECASE)
-    for path in buildozer_dir.rglob("*"):
-        if stale_name_pattern.search(path.name) or " " in path.name:
-            return True
-
-    platform_dir = buildozer_dir / "android" / "platform"
-    if platform_dir.exists():
-        for dist_dir in platform_dir.glob("build-*/dists/*"):
-            if dist_dir.name != ANDROID_PACKAGE_NAME:
-                return True
-
-    return False
-
-
-def purge_stale_android_cache(project_dir: Path, *, force: bool = False) -> bool:
-    """Remove cached native builds when package name or Python version is wrong."""
-    if not force and not buildozer_cache_is_stale(project_dir):
-        return False
-
+def purge_android_cache(project_dir: Path) -> None:
+    """Always remove buildozer state before generating a new spec."""
     removed: list[str] = []
     for rel in (".buildozer", "buildozer.spec"):
         target = project_dir / rel
-        if target.exists():
-            if target.is_dir():
-                shutil.rmtree(target)
-            else:
-                target.unlink()
-            removed.append(rel)
-
+        if not target.exists():
+            continue
+        if target.is_dir():
+            shutil.rmtree(target)
+        else:
+            target.unlink()
+        removed.append(rel)
     if removed:
-        logging.warning(
-            "[deploy_wallet] Purged stale Android cache (%s). "
-            "Spaces in dist_name break the NDK compiler.",
-            ", ".join(removed),
-        )
-    return bool(removed)
+        logging.warning("[deploy_wallet] Cleared Android cache: %s", ", ".join(removed))
 
 
 def patch_buildozer_spec(project_dir: Path, config: AndroidConfig) -> None:
@@ -145,14 +104,17 @@ def patch_buildozer_spec(project_dir: Path, config: AndroidConfig) -> None:
         parser.write(handle)
 
     verify_buildozer_spec(project_dir)
-    logging.info(
-        "[deploy_wallet] Wrote buildozer.spec (python %s, package %s)",
-        ANDROID_PYTHON_VERSION,
-        ANDROID_PACKAGE_NAME,
-    )
 
 
 def verify_buildozer_spec(project_dir: Path) -> None:
+    spec = project_dir / "buildozer.spec"
+    text = spec.read_text(encoding="utf-8")
+    if "InfiniteRicks Wallet" in text:
+        raise RuntimeError(
+            "buildozer.spec still contains 'InfiniteRicks Wallet'. "
+            "Spaces in dist_name break NDK cross-compile."
+        )
+
     parser = _read_buildozer_spec(project_dir)
     if parser is None:
         raise RuntimeError("buildozer.spec was not created")
@@ -161,24 +123,36 @@ def verify_buildozer_spec(project_dir: Path) -> None:
     requirements = parser.get("app", "requirements", fallback="")
     if package_name != ANDROID_PACKAGE_NAME or " " in package_name:
         raise RuntimeError(
-            f"Invalid package.name '{package_name}' — must be '{ANDROID_PACKAGE_NAME}' "
-            "with no spaces (spaces break NDK cross-compile paths)"
+            f"Invalid package.name '{package_name}' — must be '{ANDROID_PACKAGE_NAME}'"
         )
     if PYTHON_REQUIREMENT not in requirements.replace(" ", ""):
         raise RuntimeError(
             f"buildozer.spec must pin {PYTHON_REQUIREMENT}, got: {requirements}"
         )
 
+    logging.info(
+        "[deploy_wallet] Verified buildozer.spec: package.name=%s requirements=%s",
+        package_name,
+        requirements,
+    )
+
 
 def write_buildozer_spec(config: AndroidConfig, project_dir: Path) -> None:
-    """Always regenerate buildozer.spec; PySide skips init when the file already exists."""
-    spec = project_dir / "buildozer.spec"
-    if spec.exists():
-        spec.unlink()
-        logging.info("[deploy_wallet] Removed existing buildozer.spec for regeneration")
+    """Regenerate buildozer.spec from scratch on every deploy."""
+    purge_android_cache(project_dir)
 
-    Buildozer.initialize(pysidedeploy_config=config)
-    patch_buildozer_spec(project_dir, config)
+    Buildozer.dry_run = config.dry_run
+    command = [sys.executable, "-m", "buildozer", "init"]
+    if not config.dry_run:
+        subprocess.check_call(command, cwd=project_dir)
+
+    spec = project_dir / "buildozer.spec"
+    if not config.dry_run and not spec.exists():
+        raise RuntimeError(f"buildozer init did not create {spec}")
+
+    if not config.dry_run:
+        BuildozerConfig(spec, config)
+        patch_buildozer_spec(project_dir, config)
 
 
 def deploy(
@@ -195,16 +169,16 @@ def deploy(
     extra_ignore_dirs: str | None,
     extra_modules: str | None,
     keep_deployment_files: bool = True,
-    clean_cache: bool = False,
+    keep_cache: bool = False,
 ) -> int:
     logging.basicConfig(level=loglevel)
+    logging.info("[deploy_wallet] version %s", DEPLOY_WALLET_VERSION)
 
-    package_name = ANDROID_PACKAGE_NAME
-    if name and name.replace("_", "").lower() != package_name.replace("_", "").lower():
+    if name and name != ANDROID_PACKAGE_NAME:
         logging.warning(
-            "[deploy_wallet] Ignoring --name %r; using %r (no spaces allowed)",
+            "[deploy_wallet] Ignoring --name %r; using %r",
             name,
-            package_name,
+            ANDROID_PACKAGE_NAME,
         )
 
     extra_ignore = extra_ignore_dirs.split(",") if extra_ignore_dirs else None
@@ -237,11 +211,14 @@ def deploy(
         android_data=android_data,
         existing_config_file=config_exists,
         extra_ignore_dirs=extra_ignore,
-        name=package_name,
+        name=ANDROID_PACKAGE_NAME,
     )
 
     project_dir = Path(config.project_dir)
-    purge_stale_android_cache(project_dir, force=clean_cache or force)
+    if keep_cache:
+        logging.info("[deploy_wallet] Keeping existing .buildozer cache (--keep-cache)")
+    else:
+        purge_android_cache(project_dir)
 
     cleanup(config=config, is_android=True)
     python.install_dependencies(config=config, packages="android_packages", is_android=True)
@@ -251,9 +228,15 @@ def deploy(
         config.jars_dir = config.find_jars_dir()
         config.recipe_dir = config.find_recipe_dir()
 
-        Buildozer.dry_run = dry_run
         logging.info("[DEPLOY] Creating buildozer.spec file")
-        write_buildozer_spec(config, project_dir)
+        if keep_cache:
+            spec = project_dir / "buildozer.spec"
+            if spec.exists():
+                spec.unlink()
+            Buildozer.initialize(pysidedeploy_config=config)
+            patch_buildozer_spec(project_dir, config)
+        else:
+            write_buildozer_spec(config, project_dir)
 
         if not dry_run:
             config.update_config()
@@ -288,8 +271,11 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--keep-deployment-files", action="store_true", default=True)
     parser.add_argument("--clean-deployment-files", action="store_true")
-    parser.add_argument("--clean-cache", action="store_true",
-                        help="Remove .buildozer and buildozer.spec before building")
+    parser.add_argument(
+        "--keep-cache",
+        action="store_true",
+        help="Reuse .buildozer cache (not recommended; breaks after config changes)",
+    )
     parser.add_argument("-f", "--force", action="store_true")
     parser.add_argument("--name", type=str)
     parser.add_argument("--wheel-pyside", type=lambda p: Path(p).resolve(), required=True)
@@ -317,7 +303,7 @@ def main() -> int:
         args.extra_ignore_dirs,
         args.extra_modules,
         not args.clean_deployment_files,
-        args.clean_cache,
+        args.keep_cache,
     )
 
 
