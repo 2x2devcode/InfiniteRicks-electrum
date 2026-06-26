@@ -194,6 +194,7 @@ setup_venv() {
     source "$VENV/bin/activate"
     pip install -q --upgrade pip
     pip install -q pyside6 buildozer cython
+    pip install -q pycparser cffi setuptools
     install_android_deploy_deps
     pip install -q -r "$PROJECT_ROOT/requirements.txt" || true
 }
@@ -376,7 +377,7 @@ run_android_deploy() {
 
     cd "$PROJECT_ROOT"
     clean_android_build_cache
-    log "Running Android deploy (deploy_wallet v4, hostpython3+python3==3.11.9)..."
+    log "Running Android deploy (deploy_wallet v5, argon2-cffi recipe fix)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "infinitericks_wallet" \
         --config-file "$SPEC_FILE" \

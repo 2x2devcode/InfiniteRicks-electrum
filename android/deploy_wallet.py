@@ -20,7 +20,16 @@ from deploy_lib import cleanup, PythonExecutable
 from deploy_lib.android import AndroidData, AndroidConfig
 from deploy_lib.android.buildozer import Buildozer, BuildozerConfig
 
-DEPLOY_WALLET_VERSION = 4
+DEPLOY_WALLET_VERSION = 5
+
+BUNDLED_RECIPES_DIR = Path(__file__).resolve().parent / "recipes"
+
+# Built before argon2-cffi/cryptography (cffi needs pycparser at host setup time).
+P4A_BUILD_DEPS = (
+    "setuptools",
+    "pycparser",
+    "cffi",
+)
 
 WALLET_REQUIREMENTS = (
     "coincurve",
@@ -65,6 +74,21 @@ def purge_android_cache(project_dir: Path) -> None:
         logging.warning("[deploy_wallet] Cleared Android cache: %s", ", ".join(removed))
 
 
+def install_custom_recipes(recipe_dir: Path | None) -> None:
+    """Copy bundled p4a recipe overrides into the generated recipes directory."""
+    if recipe_dir is None or not BUNDLED_RECIPES_DIR.is_dir():
+        return
+    recipe_dir.mkdir(parents=True, exist_ok=True)
+    for bundled in BUNDLED_RECIPES_DIR.iterdir():
+        if not bundled.is_dir():
+            continue
+        dest = recipe_dir / bundled.name
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.copytree(bundled, dest)
+        logging.info("[deploy_wallet] Installed p4a recipe override: %s", bundled.name)
+
+
 def patch_buildozer_spec(project_dir: Path, config: AndroidConfig) -> None:
     spec = project_dir / "buildozer.spec"
     if not spec.exists():
@@ -80,6 +104,7 @@ def patch_buildozer_spec(project_dir: Path, config: AndroidConfig) -> None:
         PYTHON_REQUIREMENT,
         "shiboken6",
         "PySide6",
+        *P4A_BUILD_DEPS,
         *WALLET_REQUIREMENTS,
     ]
     parser.set("app", "requirements", ",".join(requirements))
@@ -232,6 +257,7 @@ def deploy(
         config.modules += list(set(extra_mods).difference(set(config.modules)))
         config.jars_dir = config.find_jars_dir()
         config.recipe_dir = config.find_recipe_dir()
+        install_custom_recipes(config.recipe_dir)
 
         logging.info("[DEPLOY] Creating buildozer.spec file")
         if keep_cache:

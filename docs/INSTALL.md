@@ -137,6 +137,7 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | `C compiler cannot create executables` | Rode `git pull`, instale deps: `apt install build-essential libc6-dev-i386 lib32z1-dev zlib1g-dev`, limpe `rm -rf .buildozer buildozer.spec deployment` e tente de novo |
 | `dist_name` com espaços | O nome interno do pacote não pode ter espaços — use `infinitericks_wallet` |
 | `hostpython3` 3.14 vs `python3` 3.11.9 | Requer `hostpython3==3.11.9,python3==3.11.9` (deploy_wallet v4+); rode `bash android/build_apk.sh` de novo |
+| `No module named 'pycparser'` (argon2-cffi) | deploy_wallet v5+ inclui recipe local e deps `pycparser,cffi,setuptools`; `git pull` e rebuilde |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |
