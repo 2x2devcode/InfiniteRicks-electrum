@@ -83,6 +83,23 @@ ensure_build_host_deps() {
     fi
 }
 
+ensure_rust() {
+    export PATH="${HOME}/.cargo/bin:${PATH}"
+    if command -v rustup &>/dev/null && command -v cargo &>/dev/null; then
+        log "Rust toolchain: $(rustc --version 2>/dev/null || echo 'present')"
+        return 0
+    fi
+
+    log "Installing Rust via rustup (required by cryptography on p4a)..."
+    if ! command -v curl &>/dev/null; then
+        die "curl required to install rustup"
+    fi
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+    export PATH="${HOME}/.cargo/bin:${PATH}"
+    rustup target add aarch64-linux-android 2>/dev/null || true
+    log "Rust installed: $(rustc --version)"
+}
+
 ensure_java() {
     local java_home
     if java_home="$(detect_java_home)"; then
@@ -376,8 +393,9 @@ run_android_deploy() {
     fi
 
     cd "$PROJECT_ROOT"
+    export PATH="${HOME}/.cargo/bin:${PATH}"
     clean_android_build_cache
-    log "Running Android deploy (deploy_wallet v7, argon2 hostpython deps)..."
+    log "Running Android deploy (deploy_wallet v8, auto-install rust)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "infinitericks_wallet" \
         --config-file "$SPEC_FILE" \
@@ -455,6 +473,7 @@ main() {
     find_ndk_sdk
     check_python_apk
     ensure_build_host_deps
+    ensure_rust
     download_wheels_if_missing
 
     if [[ -z "${PYSIDE_WHEEL:-}" || -z "${SHIBOKEN_WHEEL:-}" ]]; then

@@ -20,7 +20,7 @@ from deploy_lib import cleanup, PythonExecutable
 from deploy_lib.android import AndroidData, AndroidConfig
 from deploy_lib.android.buildozer import Buildozer, BuildozerConfig
 
-DEPLOY_WALLET_VERSION = 7
+DEPLOY_WALLET_VERSION = 8
 
 BUNDLED_RECIPES_DIR = Path(__file__).resolve().parent / "recipes"
 
