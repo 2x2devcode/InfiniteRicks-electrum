@@ -396,7 +396,7 @@ run_android_deploy() {
     cd "$PROJECT_ROOT"
     export PATH="${HOME}/.cargo/bin:${PATH}"
     clean_android_build_cache
-    log "Running Android deploy (deploy_wallet v9, auto-install rust)..."
+    log "Running Android deploy (deploy_wallet v10, auto-install rust)..."
     python "$SCRIPT_DIR/deploy_wallet.py" \
         --name "infinitericks_wallet" \
         --config-file "$SPEC_FILE" \

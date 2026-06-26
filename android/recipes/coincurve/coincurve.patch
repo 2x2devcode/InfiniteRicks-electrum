@@ -1,6 +1,5 @@
-diff '--color=auto' -uNr coincurve-19.0.1/setup.py coincurve-19.0.1.patch/setup.py
---- coincurve-19.0.1/setup.py	2024-03-02 10:40:59.000000000 +0530
-+++ coincurve-19.0.1.patch/setup.py	2024-03-10 09:51:58.034737104 +0530
+--- a/setup.py
++++ b/setup.py
 @@ -47,6 +47,7 @@
  
  
@@ -9,30 +8,22 @@ diff '--color=auto' -uNr coincurve-19.0.1/setup.py coincurve-19.0.1.patch/setup.
      if command.dry_run:
          return
      libdir = absolute('libsecp256k1')
-@@ -189,6 +190,7 @@
-         absolute('libsecp256k1/configure'),
-         '--disable-shared',
-         '--enable-static',
-+        '--host=%s' % os.environ['TOOLCHAIN_PREFIX'],
-         '--disable-dependency-tracking',
-         '--with-pic',
-         '--enable-module-extrakeys',
-@@ -269,13 +271,7 @@
+@@ -269,13 +270,7 @@
          # ABI?: py_limited_api=True,
      )
  
 -    extension.extra_compile_args = [
--        subprocess.check_output(['pkg-config', '--cflags-only-I', 'libsecp256k1']).strip().decode('utf-8') # noqa S603
+-        subprocess.check_output(['pkg-config', '--cflags-only-I', 'libsecp256k1']).strip().decode('utf-8')  # noqa S603
 -    ]
 -    extension.extra_link_args = [
--        subprocess.check_output(['pkg-config', '--libs-only-L', 'libsecp256k1']).strip().decode('utf-8'), # noqa S603
--        subprocess.check_output(['pkg-config', '--libs-only-l', 'libsecp256k1']).strip().decode('utf-8'), # noqa S603
+-        subprocess.check_output(['pkg-config', '--libs-only-L', 'libsecp256k1']).strip().decode('utf-8'),  # noqa S603
+-        subprocess.check_output(['pkg-config', '--libs-only-l', 'libsecp256k1']).strip().decode('utf-8'),  # noqa S603
 -    ]
-+    extension.extra_link_args = ["-lsecp256k1"]
++    extension.extra_link_args = ['-lsecp256k1']
  
      if os.name == 'nt' or sys.platform == 'win32':
          # Apparently, the linker on Windows interprets -lxxx as xxx.lib, not libxxx.lib
-@@ -340,7 +336,7 @@
+@@ -340,7 +335,7 @@
      license='MIT OR Apache-2.0',
  
      python_requires='>=3.8',
@@ -41,9 +32,8 @@ diff '--color=auto' -uNr coincurve-19.0.1/setup.py coincurve-19.0.1.patch/setup.
  
      packages=find_packages(exclude=('_cffi_build', '_cffi_build.*', 'libsecp256k1', 'tests')),
      package_data=package_data,
-diff '--color=auto' -uNr coincurve-19.0.1/setup_support.py coincurve-19.0.1.patch/setup_support.py
---- coincurve-19.0.1/setup_support.py	2024-03-02 10:40:59.000000000 +0530
-+++ coincurve-19.0.1.patch/setup_support.py	2024-03-10 08:53:45.650056659 +0530
+--- a/setup_support.py
++++ b/setup_support.py
 @@ -56,6 +56,7 @@
  
  
