@@ -91,7 +91,7 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 |----------|---------|
 | `unrecognized arguments: --android-platform` | Use `bash android/build_apk.sh` (chama `pyside6-android-deploy`, não `pyside6-deploy`) |
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
-| Wheels Android ausentes | Baixe PySide6/shiboken6 `android_aarch64` em `android/wheels/` |
+| `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |

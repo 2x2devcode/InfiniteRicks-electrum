@@ -86,7 +86,9 @@ setup_ndk_sdk() {
     tmp="$(mktemp -d)"
     git clone --depth 1 https://code.qt.io/pyside/pyside-setup.git "$tmp/pyside-setup" 2>/dev/null || \
         git clone --depth 1 https://github.com/qt/pyside-setup.git "$tmp/pyside-setup"
-    python3 "$tmp/pyside-setup/tools/cross_compile_android/main.py" \
+    log "Installing NDK downloader dependencies (gitpython, jinja2, tqdm)..."
+    pip install -q -r "$tmp/pyside-setup/tools/cross_compile_android/requirements.txt"
+    python "$tmp/pyside-setup/tools/cross_compile_android/main.py" \
         --download-only --skip-update --auto-accept-license
     rm -rf "$tmp"
 }
