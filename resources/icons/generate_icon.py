@@ -9,7 +9,7 @@ try:
     draw = ImageDraw.Draw(img)
     draw.ellipse([64, 64, 448, 448], fill=(35, 134, 54, 255))
     draw.text((180, 200), "RICK", fill=(255, 255, 255, 255))
-    out = Path(__file__).parent / "icons" / "app_icon.png"
+    out = Path(__file__).parent / "app_icon.png"
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out)
     print(f"Icon saved to {out}")

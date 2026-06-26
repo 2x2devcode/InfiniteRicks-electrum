@@ -7,11 +7,11 @@
 - pip
 
 ### Android (compilação)
-- Ubuntu 22.04
-- Python 3.10+
-- Android SDK API 35
-- Android NDK 25+
+- Ubuntu 22.04 (host Linux)
+- **Python 3.10 ou 3.11** (buildozer não suporta 3.12+)
 - JDK 17
+- Android SDK + NDK (baixados automaticamente pelo script ou manualmente)
+- Wheels PySide6 + shiboken6 para `android_aarch64`
 
 ## Instalação Desktop
 
@@ -31,23 +31,51 @@ python main.py
 
 ## Build APK Android
 
-### Opção 1: PySide6-Deploy (recomendado)
+Use `pyside6-android-deploy` (ferramenta oficial Qt). **Não** use `pyside6-deploy --android-platform` — esse argumento não existe.
+
+### Passo 1: Python 3.10 ou 3.11
 
 ```bash
-export ANDROID_SDK_ROOT=$HOME/Android/Sdk
-export ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/25.2.9519653
+python3.10 --version   # deve ser 3.10.x ou 3.11.x
+```
+
+### Passo 2: NDK e SDK (primeira vez)
+
+```bash
+bash android/build_apk.sh --setup-ndk
+```
+
+Isso baixa o NDK/SDK para `~/.pyside6_android_deploy` (ou `~/.pyside6-android-deploy`).
+
+### Passo 3: Wheels Android PySide6
+
+Coloque os wheels em `android/wheels/`:
+
+```bash
+pip install qtpip
+qtpip download PySide6 --android --arch aarch64 -d android/wheels
+qtpip download shiboken6 --android --arch aarch64 -d android/wheels
+```
+
+Alternativa: baixe de [Qt for Python releases](https://download.qt.io/official_releases/QtForPython/).
+
+### Passo 4: Compilar APK
+
+```bash
 bash android/build_apk.sh
 ```
 
-### Opção 2: Buildozer
+O script usa `pyside6-android-deploy` com `android/pysidedeploy.spec`. O APK de debug aparece no diretório do projeto ou em `deployment/`.
+
+Variáveis opcionais:
 
 ```bash
-pip install buildozer cython
-cd android
-buildozer android debug
+export PYSIDE_WHEEL=android/wheels/PySide6-....whl
+export SHIBOKEN_WHEEL=android/wheels/shiboken6-....whl
+export NDK_PATH=...
+export SDK_PATH=...
+bash android/build_apk.sh
 ```
-
-O APK será gerado em `bin/` ou `build/android/`.
 
 ## Servidor SPV
 
@@ -61,6 +89,9 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 
 | Problema | Solução |
 |----------|---------|
+| `unrecognized arguments: --android-platform` | Use `bash android/build_apk.sh` (chama `pyside6-android-deploy`, não `pyside6-deploy`) |
+| `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
+| Wheels Android ausentes | Baixe PySide6/shiboken6 `android_aarch64` em `android/wheels/` |
 | `No Connection` | Verifique internet e firewall na porta 50002 |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |

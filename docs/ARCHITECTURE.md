@@ -131,7 +131,7 @@ infinitericks_wallet/
 ├── spv/             # Header sync, merkle proofs, reorg
 ├── gui/             # PySide6 screens
 ├── storage/         # Encrypted wallet persistence
-├── android/         # APK build (pyside6-deploy)
+├── android/         # APK build (pyside6-android-deploy)
 ├── resources/       # Icons, QSS styles
 ├── tests/           # pytest suite
 ├── scripts/         # Build & utility scripts
