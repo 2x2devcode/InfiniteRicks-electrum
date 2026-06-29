@@ -128,8 +128,8 @@ cd electrumx
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip wheel setuptools
-# Instala o pacote + backend RocksDB (ou use ".[leveldb]" se preferir LevelDB)
-pip install -e ".[rocksdb,uvloop]"
+# ElectrumX 2.x: use LevelDB no Python 3.10 (rocksdb-ng exige Python 3.11+)
+pip install -e ".[leveldb,uvloop]"
 ```
 
 Confirme que o comando existe:
@@ -368,6 +368,7 @@ E na carteira use o hostname em vez do IP.
 
 | Sintoma | Causa provável | Ação |
 |---------|----------------|------|
+| `No module named electrumx_server` | Comando errado | Use `electrumx_server` ou `python electrumx_server`, **não** `python -m electrumx_server`. Rode `pip install -e ".[rocksdb]"` |
 | `Connection refused` :50002 | ElectrumX parado | `systemctl status electrumx-infiniteRicks` |
 | ElectrumX reinicia em loop | RPC errado / daemon parado | Confira `DAEMON_URL` e `InfiniteRicksd getinfo` |
 | `unknown coin InfiniteRicks` | Classe não adicionada | Verifique `coins.py` e `COIN=InfiniteRicks` |
@@ -398,8 +399,11 @@ ss -tlnp | grep -E '31648|50001|50002'
 # 1. Nó com txindex
 InfiniteRicksd -daemon
 
-# 2. ElectrumX com moeda InfiniteRicks em coins.py
-systemctl start electrumx-infiniteRicks
+# 2. ElectrumX com coins.py InfiniteRicks
+cd ~/electrumx && source .venv/bin/activate
+pip install -e ".[rocksdb,uvloop]"
+set -a && source /etc/electrumx_infiniteRicks.conf && set +a
+electrumx_server
 
 # 3. Testar
 python scripts/check_spv_server.py

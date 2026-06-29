@@ -5,6 +5,7 @@ COIN=InfiniteRicks
 NET=mainnet
 DAEMON_URL=http://rick_rpc_user:ALTERE_SENHA_RPC@127.0.0.1:31648/
 DB_DIRECTORY=/var/lib/electrumx-infiniteRicks
+DB_ENGINE=leveldb
 BANNER=InfiniteRicks ElectrumX SPV
 
 # tcp local (debug) + ssl público (carteira)
