@@ -184,6 +184,7 @@ COIN=InfiniteRicks
 NET=mainnet
 DAEMON_URL=http://rick_rpc_user:TROQUE_POR_SENHA_FORTE_AQUI@127.0.0.1:31648/
 DB_DIRECTORY=/var/lib/electrumx-infiniteRicks
+DB_ENGINE=leveldb
 BANNER=InfiniteRicks ElectrumX SPV
 
 # TCP local + SSL público (ajuste conforme necessário)
@@ -271,7 +272,7 @@ electrumx_server
 python electrumx_server
 ```
 
-Se `electrumx_server: command not found`, reinstale: `pip install -e ".[rocksdb,uvloop]"`
+Se `electrumx_server: command not found`, reinstale: `pip install -e ".[leveldb,uvloop]"`
 
 ---
 
@@ -368,7 +369,9 @@ E na carteira use o hostname em vez do IP.
 
 | Sintoma | Causa provável | Ação |
 |---------|----------------|------|
-| `No module named electrumx_server` | Comando errado | Use `electrumx_server` ou `python electrumx_server`, **não** `python -m electrumx_server`. Rode `pip install -e ".[rocksdb]"` |
+| `No module named electrumx_server` | Comando errado | Use `electrumx_server` ou `python electrumx_server`, **não** `python -m electrumx_server`. Rode `pip install -e ".[leveldb]"` |
+| `required envvar DB_ENGINE not set` | Falta no `/etc/electrumx_infiniteRicks.conf` | Adicione `DB_ENGINE=leveldb` e instale `pip install -e ".[leveldb]"` |
+| `rocksdb-ng` / pip falha no Python 3.10 | RocksDB exige Python 3.11+ | Use `DB_ENGINE=leveldb` e `pip install -e ".[leveldb,uvloop]"` |
 | `Connection refused` :50002 | ElectrumX parado | `systemctl status electrumx-infiniteRicks` |
 | ElectrumX reinicia em loop | RPC errado / daemon parado | Confira `DAEMON_URL` e `InfiniteRicksd getinfo` |
 | `unknown coin InfiniteRicks` | Classe não adicionada | Verifique `coins.py` e `COIN=InfiniteRicks` |
