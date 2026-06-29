@@ -119,7 +119,7 @@ sudo apt install -y python3 python3-pip python3-venv python3-dev \
   libleveldb-dev librocksdb-dev
 ```
 
-### 2.1 Clonar e instalar
+### 2.2 Clonar e instalar
 
 ```bash
 cd ~
@@ -131,39 +131,22 @@ pip install -U pip wheel
 pip install -e .
 ```
 
-### 2.2 Adicionar moeda InfiniteRicks
+### 2.3 Substituir `coins.py` (somente InfiniteRicks)
 
-Abra `src/electrumx/lib/coins.py` e adicione **no final do arquivo** (antes de qualquer registro automático, se houver):
-
-```python
-class InfiniteRicks(ScryptMixin, Coin):
-  """InfiniteRicks mainnet — Scrypt block hash, Peercoin-style nTime txs."""
-  NAME = "InfiniteRicks"
-  SHORTNAME = "RICK"
-  NET = "mainnet"
-  P2PKH_VERBYTE = bytes.fromhex("00")
-  P2SH_VERBYTES = (bytes.fromhex("55"),)
-  WIF_BYTE = bytes.fromhex("80")
-  GENESIS_HASH = (
-      "0000040917e53132256572dbcd3f780e94d40b4a1895672bfd64e0c5c0741dc8"
-  )
-  DESERIALIZER = lib_tx.DeserializerTxTime
-  TX_COUNT = 500000
-  TX_COUNT_HEIGHT = 200000
-  TX_PER_BLOCK = 2
-  RPC_PORT = 31648
-  REORG_LIMIT = 5000
-  PEERS = []
-```
-
-Ou aplique o snippet pronto do repositório da carteira:
+O ElectrumX oficial traz centenas de moedas. Use o arquivo **minimalista** deste repositório, que contém apenas InfiniteRicks:
 
 ```bash
 cd ~/infinitericks-electrum
-# Cole o conteúdo de scripts/electrumx/InfiniteRicks_coin.snippet no final de coins.py
+cp scripts/electrumx/coins.py ~/electrumx/src/electrumx/lib/coins.py
 ```
 
-**Parâmetros** (fonte: `docs/CHAIN_ANALYSIS.md`):
+O arquivo inclui:
+- Classe base `Coin` (infraestrutura ElectrumX)
+- `ScryptMixin` (block hash Scrypt N=1024, r=1, p=1)
+- `InfiniteRicks` (mainnet, RPC `31648`)
+- `InfiniteRicksTestnet` (testnet, RPC `41648`, opcional)
+
+**Parâmetros mainnet** (fonte: `docs/CHAIN_ANALYSIS.md`):
 
 | Campo | Valor |
 |-------|-------|
@@ -173,7 +156,7 @@ cd ~/infinitericks-electrum
 | Genesis | `0000040917e53132256572dbcd3f780e94d40b4a1895672bfd64e0c5c0741dc8` |
 | Block hash | Scrypt N=1024, r=1, p=1 (via `ScryptMixin`, version ≤ 6) |
 
-### 2.3 Diretório de dados
+### 2.4 Diretório de dados
 
 ```bash
 sudo mkdir -p /var/lib/electrumx-infiniteRicks
@@ -401,5 +384,5 @@ python main.py
 
 - Parâmetros da rede: `docs/CHAIN_ANALYSIS.md`
 - Cliente da carteira: `infinitericks_wallet/network/electrum_client.py`
-- Snippet da moeda: `scripts/electrumx/InfiniteRicks_coin.snippet`
+- Snippet da moeda: `scripts/electrumx/coins.py` (substitui `src/electrumx/lib/coins.py`)
 - ElectrumX docs: https://electrumx-spesmilo.readthedocs.io/
