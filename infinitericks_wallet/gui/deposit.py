@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import io
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QGuiApplication, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QListWidget, QPushButton, QVBoxLayout, QWidget
 
@@ -25,9 +25,9 @@ class DepositScreen(QWidget):
         layout = QVBoxLayout(self)
 
         self._qr_label = QLabel()
-        self._qr_label.setAlignment(0x0004)
+        self._qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._qr_label.setMinimumSize(200, 200)
-        layout.addWidget(self._qr_label, alignment=0x0004)
+        layout.addWidget(self._qr_label, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self._address_label = QLineEdit()
         self._address_label.setReadOnly(True)

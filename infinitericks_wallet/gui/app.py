@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import threading
 from typing import Optional
 
 from PySide6.QtCore import QTimer
@@ -181,12 +182,12 @@ class WalletApp(QMainWindow):
             return
         if self._sync:
             self._sync.stop()
-        self._sync = SyncManager(self._wallet, on_update=self._refresh_ui)
+        self._sync = SyncManager(self._wallet, on_update=self._schedule_refresh)
         self._sync.start()
-        try:
-            self._sync.sync_now()
-        except Exception as exc:
-            logger.warning("Initial sync failed: %s", exc)
+
+    def _schedule_refresh(self) -> None:
+        """Queue UI refresh on the Qt main thread (sync runs in background)."""
+        QTimer.singleShot(0, self._refresh_ui)
 
     def _refresh_ui(self) -> None:
         if not self._wallet:
@@ -227,16 +228,27 @@ class WalletApp(QMainWindow):
         if not self._wallet or not self._sync:
             self._send.on_send_complete(False, "Carteira não sincronizada.")
             return
-        try:
-            tx = self._wallet.create_send_tx(address, amount, fee_rate)
-            raw = tx.serialize().hex()
-            txid = self._sync.broadcast_transaction(raw)
-            self._save_wallet()
-            self._send.on_send_complete(True)
-            QMessageBox.information(self, "Sucesso", f"Transação enviada!\n{txid}")
-            self._stack.setCurrentIndex(SCREEN_HOME)
-        except Exception as exc:
-            self._send.on_send_complete(False, str(exc))
+        wallet = self._wallet
+        sync = self._sync
+
+        def _broadcast() -> None:
+            try:
+                tx = wallet.create_send_tx(address, amount, fee_rate)
+                raw = tx.serialize().hex()
+                txid = sync.broadcast_transaction(raw)
+            except Exception as exc:
+                QTimer.singleShot(0, lambda: self._send.on_send_complete(False, str(exc)))
+                return
+
+            def _finish() -> None:
+                self._save_wallet()
+                self._send.on_send_complete(True)
+                QMessageBox.information(self, "Sucesso", f"Transação enviada!\n{txid}")
+                self._stack.setCurrentIndex(SCREEN_HOME)
+
+            QTimer.singleShot(0, _finish)
+
+        threading.Thread(target=_broadcast, daemon=True).start()
 
     def _save_wallet(self) -> None:
         if self._wallet and self._password:
