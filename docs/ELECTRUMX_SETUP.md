@@ -127,9 +127,20 @@ git clone https://github.com/spesmilo/electrumx.git
 cd electrumx
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -U pip wheel
-pip install -e .
+pip install -U pip wheel setuptools
+# Instala o pacote + backend RocksDB (ou use ".[leveldb]" se preferir LevelDB)
+pip install -e ".[rocksdb,uvloop]"
 ```
+
+Confirme que o comando existe:
+
+```bash
+which electrumx_server
+# deve mostrar: /root/electrumx/.venv/bin/electrumx_server
+```
+
+> **Não use** `python -m electrumx_server` — isso dá `No module named electrumx_server`.
+> O correto é o comando **`electrumx_server`** (instalado pelo pip) ou **`python electrumx_server`** na pasta do projeto.
 
 ### 2.3 Substituir `coins.py` (somente InfiniteRicks)
 
@@ -163,7 +174,7 @@ sudo mkdir -p /var/lib/electrumx-infiniteRicks
 sudo chown $USER:$USER /var/lib/electrumx-infiniteRicks
 ```
 
-### 2.4 Configuração do ambiente
+### 2.5 Configuração do ambiente
 
 Crie `/etc/electrumx_infiniteRicks.conf`:
 
@@ -191,7 +202,7 @@ EOF
 
 Substitua `rick_rpc_user` e a senha pelos mesmos valores de `InfiniteRicks.conf`.
 
-### 2.5 Certificado TLS (teste rápido)
+### 2.6 Certificado TLS (teste rápido)
 
 A carteira usa TLS na porta `50002`. Para testes:
 
@@ -204,7 +215,7 @@ sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/electrumx/ssl/key.pem \
 
 A carteira já aceita certificado autoassinado (`CERT_NONE`).
 
-### 2.6 Serviço systemd
+### 2.7 Serviço systemd
 
 ```bash
 sudo tee /etc/systemd/system/electrumx-infiniteRicks.service << EOF
@@ -216,7 +227,7 @@ Requires=infinitericksd.service
 [Service]
 EnvironmentFile=/etc/electrumx_infiniteRicks.conf
 WorkingDirectory=$HOME/electrumx
-ExecStart=$HOME/electrumx/.venv/bin/python -m electrumx_server
+ExecStart=$HOME/electrumx/.venv/bin/electrumx_server
 Restart=always
 RestartSec=10
 User=$USER
@@ -229,7 +240,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now electrumx-infiniteRicks
 ```
 
-### 2.7 Acompanhar indexação
+### 2.8 Acompanhar indexação
 
 ```bash
 sudo journalctl -u electrumx-infiniteRicks -f
@@ -242,6 +253,25 @@ Verifique se a porta está escutando:
 ```bash
 ss -tlnp | grep -E '50001|50002'
 ```
+
+### 2.9 Rodar manualmente (teste)
+
+```bash
+cd ~/electrumx
+source .venv/bin/activate
+
+# Carregar variáveis de ambiente
+set -a
+source /etc/electrumx_infiniteRicks.conf
+set +a
+
+# Iniciar (qualquer uma das opções abaixo)
+electrumx_server
+# ou:
+python electrumx_server
+```
+
+Se `electrumx_server: command not found`, reinstale: `pip install -e ".[rocksdb,uvloop]"`
 
 ---
 
