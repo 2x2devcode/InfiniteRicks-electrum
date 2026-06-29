@@ -5,6 +5,25 @@
 ### Desktop (Linux/macOS/Windows)
 - Python 3.10+
 - pip
+- **Linux:** servidor gráfico (X11 ou Wayland) e bibliotecas Qt/XCB (veja abaixo)
+
+### Linux — dependências gráficas (obrigatório para `python main.py`)
+
+PySide6 precisa de um **display** e de bibliotecas do sistema. No Ubuntu/Debian:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  libxcb-cursor0 libxcb-xinerama0 libxkbcommon-x11-0 \
+  libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
+  libegl1 libgl1
+```
+
+- **Desktop normal:** abra um terminal na sessão gráfica (não só SSH sem X11) e rode `python main.py`.
+- **WSL (Windows):** use WSLg (Windows 11) ou um servidor X (VcXsrv) com `export DISPLAY=:0`.
+- **Servidor sem monitor (só teste):** `sudo apt install xvfb` e depois `xvfb-run python main.py`.
+
+Sem display você verá erros como `could not connect to display` ou `Could not load the Qt platform plugin "xcb"`.
 
 ### Android (compilação)
 - Ubuntu 22.04 (host Linux)
@@ -130,6 +149,7 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 
 | Problema | Solução |
 |----------|---------|
+| `could not connect to display` / plugin `xcb` | Instale `libxcb-cursor0` e demais libs (seção **Linux — dependências gráficas**). Rode em ambiente com GUI ou use `xvfb-run python main.py` |
 | `unrecognized arguments: --android-platform` | Use `bash android/build_apk.sh` (chama `pyside6-android-deploy`, não `pyside6-deploy`) |
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
 | `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
