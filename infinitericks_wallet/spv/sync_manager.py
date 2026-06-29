@@ -33,10 +33,15 @@ class SyncManager:
         self._thread: Optional[threading.Thread] = None
         self._tip_height = 0
         self._lock = threading.Lock()
+        self._last_error: Optional[str] = None
 
     @property
     def connected(self) -> bool:
         return self.client.connected
+
+    @property
+    def last_error(self) -> Optional[str]:
+        return self._last_error
 
     @property
     def tip_height(self) -> int:
@@ -58,10 +63,12 @@ class SyncManager:
             try:
                 if not self.client.connected:
                     self.client.connect()
+                self._last_error = None
                 self._sync_headers()
                 self._sync_addresses()
                 self._notify()
             except ElectrumClientError as exc:
+                self._last_error = str(exc)
                 logger.error("Sync error: %s", exc)
                 time.sleep(5)
             except Exception as exc:

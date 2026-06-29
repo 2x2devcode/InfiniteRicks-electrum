@@ -86,13 +86,18 @@ class HomeScreen(QWidget):
         rick = satoshis / COIN
         self._balance.setText(f"{rick:.8f} RICK")
 
-    def update_network(self, connected: bool, height: int) -> None:
+    def update_network(self, connected: bool, height: int, error: str = "") -> None:
         if connected:
             self._network_status.setText("🟢 Active Mainnet Network")
             self._network_status.setStyleSheet("color: #3fb950;")
-        else:
-            self._network_status.setText("🔴 No Connection")
+        elif error:
+            self._network_status.setText("🔴 No Connection (servidor SPV offline)")
             self._network_status.setStyleSheet("color: #f85149;")
+            self._network_status.setToolTip(error)
+        else:
+            self._network_status.setText("🟡 Connecting...")
+            self._network_status.setStyleSheet("color: #d29922;")
+            self._network_status.setToolTip("")
         self._block_height.setText(f"Block: {height:,}" if height else "Block: —")
 
     def update_transactions(self, items: list) -> None:

@@ -194,11 +194,14 @@ class WalletApp(QMainWindow):
             return
         connected = self._sync.connected if self._sync else False
         height = self._sync.tip_height if self._sync else 0
+        last_error = self._sync.last_error if self._sync else ""
         self._home.update_balance(self._wallet.balance())
-        self._home.update_network(connected, height)
+        self._home.update_network(connected, height, last_error or "")
         self._home.update_transactions(self._wallet.recent_history())
         if self._stack.currentIndex() == SCREEN_SETTINGS and self._sync:
-            self._settings.update_status(connected, height, self._sync.client.current_server)
+            self._settings.update_status(
+                connected, height, self._sync.client.current_server, self._sync.last_error or ""
+            )
 
     def _show_deposit(self) -> None:
         if self._wallet:
@@ -221,7 +224,12 @@ class WalletApp(QMainWindow):
 
     def _show_settings(self) -> None:
         if self._sync:
-            self._settings.update_status(self._sync.connected, self._sync.tip_height, self._sync.client.current_server)
+            self._settings.update_status(
+                self._sync.connected,
+                self._sync.tip_height,
+                self._sync.client.current_server,
+                self._sync.last_error or "",
+            )
         self._stack.setCurrentIndex(SCREEN_SETTINGS)
 
     def _do_send(self, address: str, amount: int, fee_rate: int) -> None:

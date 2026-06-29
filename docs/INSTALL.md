@@ -163,6 +163,6 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | App abre e fecha em segundos | Recompile com `git pull` (deploy_wallet v9+ compila `coincurve` para arm64). Capture o traceback: `adb logcat -d \| findstr /I "python FATAL coincurve ImportError Traceback infinitericks"` |
 | `coincurve` / arquitetura errada no APK | Não instale `coincurve` no venv Android (`requirements-host.txt` só tem pacotes pure-Python). Limpe cache: `rm -rf .buildozer deployment` e rebuilde |
 | App trava / ANR ao abrir ou desbloquear | A sincronização SPV roda em background (não bloqueia a UI). Recompile com a versão mais recente. Sem internet a carteira abre offline; status mostra desconectado |
-| `No Connection` | Verifique internet e firewall na porta 50002 |
+| `No Connection` | O app está OK — o **servidor SPV ElectrumX** não responde. Teste: `python scripts/check_spv_server.py`. Servidor padrão: `144.91.107.244:50002`. A carteira funciona offline (criar/importar); saldo só sincroniza com servidor online. Para outro servidor, edite `ELECTRUM_SERVERS` em `config/chainparams.py` |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |
