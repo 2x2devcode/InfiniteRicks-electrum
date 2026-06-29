@@ -1,0 +1,18 @@
+# /etc/electrumx_infiniteRicks.conf — exemplo
+# Copie para o servidor e ajuste usuário/senha RPC.
+
+COIN=InfiniteRicks
+NET=mainnet
+DAEMON_URL=http://rick_rpc_user:ALTERE_SENHA_RPC@127.0.0.1:31648/
+DB_DIRECTORY=/var/lib/electrumx-infiniteRicks
+BANNER=InfiniteRicks ElectrumX SPV
+
+# tcp local (debug) + ssl público (carteira)
+SERVICES=tcp://127.0.0.1:50001,ssl://0.0.0.0:50002
+
+MAX_SESSIONS=500
+CACHE_MB=500
+PEER_DISCOVERY=off
+
+SSL_CERTFILE=/etc/electrumx/ssl/cert.pem
+SSL_KEYFILE=/etc/electrumx/ssl/key.pem

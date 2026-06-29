@@ -73,6 +73,17 @@ bash android/build_apk.sh
 
 Ver `docs/INSTALL.md` e `docs/DEVELOPER.md`.
 
+## Servidor ElectrumX (SPV)
+
+Se a carteira mostra **No Connection**, o servidor SPV pode estar offline. Para instalar o seu:
+
+```bash
+# Guia completo
+cat docs/ELECTRUMX_SETUP.md
+```
+
+Teste de conectividade: `python scripts/check_spv_server.py`
+
 ## Links
 
 - Site: https://infinitericks.com

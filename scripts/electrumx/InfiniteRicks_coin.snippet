@@ -1,0 +1,21 @@
+# Cole este bloco no final de src/electrumx/lib/coins.py (spesmilo/electrumx)
+# Requer: class ScryptMixin e class Coin já definidas no mesmo arquivo.
+
+class InfiniteRicks(ScryptMixin, Coin):
+    """InfiniteRicks mainnet — Scrypt block hash, Peercoin-style nTime txs."""
+    NAME = "InfiniteRicks"
+    SHORTNAME = "RICK"
+    NET = "mainnet"
+    P2PKH_VERBYTE = bytes.fromhex("00")
+    P2SH_VERBYTES = (bytes.fromhex("55"),)
+    WIF_BYTE = bytes.fromhex("80")
+    GENESIS_HASH = (
+        "0000040917e53132256572dbcd3f780e94d40b4a1895672bfd64e0c5c0741dc8"
+    )
+    DESERIALIZER = lib_tx.DeserializerTxTime
+    TX_COUNT = 500000
+    TX_COUNT_HEIGHT = 200000
+    TX_PER_BLOCK = 2
+    RPC_PORT = 31648
+    REORG_LIMIT = 5000
+    PEERS = []
