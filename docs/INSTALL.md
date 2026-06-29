@@ -5,6 +5,25 @@
 ### Desktop (Linux/macOS/Windows)
 - Python 3.10+
 - pip
+- **Linux:** servidor gráfico (X11 ou Wayland) e bibliotecas Qt/XCB (veja abaixo)
+
+### Linux — dependências gráficas (obrigatório para `python main.py`)
+
+PySide6 precisa de um **display** e de bibliotecas do sistema. No Ubuntu/Debian:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  libxcb-cursor0 libxcb-xinerama0 libxkbcommon-x11-0 \
+  libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
+  libegl1 libgl1
+```
+
+- **Desktop normal:** abra um terminal na sessão gráfica (não só SSH sem X11) e rode `python main.py`.
+- **WSL (Windows):** use WSLg (Windows 11) ou um servidor X (VcXsrv) com `export DISPLAY=:0`.
+- **Servidor sem monitor (só teste):** `sudo apt install xvfb` e depois `xvfb-run python main.py`.
+
+Sem display você verá erros como `could not connect to display` ou `Could not load the Qt platform plugin "xcb"`.
 
 ### Android (compilação)
 - Ubuntu 22.04 (host Linux)
@@ -130,6 +149,7 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 
 | Problema | Solução |
 |----------|---------|
+| `could not connect to display` / plugin `xcb` | Instale `libxcb-cursor0` e demais libs (seção **Linux — dependências gráficas**). Rode em ambiente com GUI ou use `xvfb-run python main.py` |
 | `unrecognized arguments: --android-platform` | Use `bash android/build_apk.sh` (chama `pyside6-android-deploy`, não `pyside6-deploy`) |
 | `Python 3.12+` / buildozer | Use Python 3.10 ou 3.11 para compilar o APK |
 | `No module named 'git'` | Rode `bash android/build_apk.sh` de novo — o script instala `gitpython` antes do download do NDK |
@@ -143,6 +163,6 @@ Servidores adicionais podem ser configurados em `infinitericks_wallet/config/cha
 | App abre e fecha em segundos | Recompile com `git pull` (deploy_wallet v9+ compila `coincurve` para arm64). Capture o traceback: `adb logcat -d \| findstr /I "python FATAL coincurve ImportError Traceback infinitericks"` |
 | `coincurve` / arquitetura errada no APK | Não instale `coincurve` no venv Android (`requirements-host.txt` só tem pacotes pure-Python). Limpe cache: `rm -rf .buildozer deployment` e rebuilde |
 | App trava / ANR ao abrir ou desbloquear | A sincronização SPV roda em background (não bloqueia a UI). Recompile com a versão mais recente. Sem internet a carteira abre offline; status mostra desconectado |
-| `No Connection` | Verifique internet e firewall na porta 50002 |
+| `No Connection` | O app está OK — o **servidor SPV ElectrumX** não responde. Teste: `python scripts/check_spv_server.py`. Servidor padrão: `144.91.107.244:50002`. A carteira funciona offline (criar/importar); saldo só sincroniza com servidor online. Para outro servidor, edite `ELECTRUM_SERVERS` em `config/chainparams.py` |
 | Senha incorreta | Use a senha definida na criação |
 | Seed inválida | Confirme 12 palavras BIP39 em inglês |
